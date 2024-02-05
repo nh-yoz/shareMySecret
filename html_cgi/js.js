@@ -21,6 +21,7 @@ const setErrors = (errors) => {
         'send-expires-error': '',
         'send-error': '',
         'get-error-error': '',
+        'send-result_email-address_error': '',
         ...errors
     }
     Object.entries(allErrorsId).forEach(([key, value]) => {
@@ -167,15 +168,96 @@ const showSpinner = (visible) => {
     }
 }
 
+const sendEmail = () => {
+    const errEl = document.getElementById('send-result_email-address_error');
+    const resultElement = document.getElementById('send-result_email-result')
+    resultElement.innerHTML = '&nbsp;'
+    const emails = document.getElementById('send-result-email-addresses').value.split(/;|:|,| /g).filter(val => val !== '');
+    const errors = {}
+    const emailsOk = emails.every(email => {
+        if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
+            console.log(`email ${email} ok`);
+            return true;
+        } else {
+            console.log(`email ${email} not ok`);
+            errors['send-result_email-address_error'] = `"${email}" is not a valid email`;
+            return false;
+        }
+    })
+    setErrors(errors);
+    console.log(emailsOk)
+    if (emailsOk) {
+        showSpinner(true);
+        const controller = new AbortController();
+        const tOutId = setTimeout(() => controller.abort(), 8000)
+        const url = `sendmail.cgi`;
+        const body = {
+            to: emails,
+            subject: "You've got a secret message",
+            text_message: `Hello,\n\n
+                A secret message has been sent to you. To view the message, use the link below.\n\n
+                ${document.getElementById('send-result-link').value}\n\n\n
+                Want to send secret messages? Visit ${window.location.href}`,
+            html_message: `<html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body {
+                            background-color: black;
+                            color: greenyellow;
+                            font-family: Arial, Helvetica, sans-serif;
+                            line-height: 1.4em;
+                        }
+                        p, a { font-size: 1rem; color: inherit; }
+                    </style>
+                </head>
+                <body>
+                    <p>Hello</p>
+                    <p>A secret message has been sent to you.</p>
+                    <p>To view the message, click <a href="${document.getElementById('send-result-link').value}">here</a>.</p>
+                    <p>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
+                </body>
+            </html>`
+        };
+        fetch(url, { method: "POST", signal: controller.signal, body: JSON.stringify(body) })
+            .then(res => {
+                if (res.ok) {
+                    resultElement.innerHTML = 'The email has been sent';
+                    resultElement.classList.add('info');
+                    resultElement.classList.remove('error');
+                }
+                return Promise.reject(res);
+            })
+            .catch(err => {
+                let error = '';
+                if (err.name && err.name === 'AbortError') {
+                    error = 'The server took too long to respond. Try again later.'
+                } else {
+                    error = 'The server encountered an error. Try again later.'
+                }
+                resultElement.innerHTML = error;
+                resultElement.classList.add('error');
+                resultElement.classList.remove('info');
+            })
+            .finally(() => {
+                clearTimeout(tOutId);
+                showSpinner(false);
+            })
+    
+    }
+}
+
+
 window.addEventListener('load', () => {
     const throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', { speedFactor: 0.5 });
     document.getElementById('send-message').addEventListener('input', () => messageChange());
     document.getElementById('send-send').addEventListener('click', () => send());
     document.getElementById('send-result-copy').addEventListener('click', () => copyElementValueToClipboard('send-result-link'));
-    document.getElementById('send-result-go-home').addEventListener('click', () => goHome());
+    document.getElementById('send-result-email').addEventListener('click', sendEmail);
+    document.getElementById('send-result-go-home').addEventListener('click', goHome);
     document.getElementById('get-result-copy').addEventListener('click', () => copyElementValueToClipboard('get-result-message'));
-    document.getElementById('get-result-go-home').addEventListener('click', () => goHome());
-    document.getElementById('get-error-go-home').addEventListener('click', () => goHome());
+    document.getElementById('get-result-go-home').addEventListener('click', goHome);
+    document.getElementById('get-error-go-home').addEventListener('click', goHome);
     const searchString = window.location.search;
     if (searchString !== '') {
         throbber.direction = 'decrypt'

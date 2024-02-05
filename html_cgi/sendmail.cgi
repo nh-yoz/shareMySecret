@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import smtplib, json, collections.abc, traceback, sys, re
-from email.message import EmailMessage
-from email.utils import make_msgid
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 smtp_host = 'smtp.example.com'
 smtp_port = 465
@@ -45,7 +45,7 @@ def is_string_array(value) -> bool:
 
 def validate_body(obj):
     test_dict = {
-        'addresses': ['an array of email addresses (strings)', is_string_array],
+        'to': ['an array of email addresses (strings)', is_string_array],
         'subject': ['a string', is_string],
         'text_message': ['a string', is_string],
         'html_message': ['a string', is_string]
@@ -57,7 +57,7 @@ def validate_body(obj):
         elif not test_dict[key][1](obj[key]):
             respond_with_error(400, f'The property "{key}" should be {test_dict[key][0]}')
             return False
-    for email_address in obj['addresses']:
+    for email_address in obj['to']:
         if not is_valid_email(email_address):
             respond_with_error(400, f'{email_address} is not a valid email address')
             return False
@@ -66,13 +66,12 @@ def validate_body(obj):
 
 def send_mail(obj):
     global smtp_host, smtp_port, smtp_ssl, smtp_from, smtp_auth, smtp_credentials
-    msg = EmailMessage()
+    msg = MIMEMultipart("alternative")
     msg['From'] = smtp_from
-    msg['To'] = ", ".join(obj['addresses'])
+    msg['To'] = ", ".join(obj['to'])
     msg['Subject'] = obj['subject']
-    msg.set_content(obj['text_message'])
-    asparagus_cid = make_msgid()
-    msg.add_alternative(obj['html_message'].format(asparagus_cid=asparagus_cid[1:-1]), subtype='html')
+    msg.attach(MIMEText(obj['text_message'], 'plain'))
+    msg.attach(MIMEText(obj['html_message'], 'html'))
     server = smtplib.SMTP_SSL(smtp_host, smtp_port) if smtp_ssl else smtplib.SMTP(smtp_host, smtp_port)
     if smtp_auth:
         server.login(smtp_credentials[0], smtp_credentials[1])

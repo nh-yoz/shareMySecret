@@ -129,6 +129,10 @@ input, select {
     width: 47%;
 }
 
+#send-result_email-address_error {
+    margin: 0;
+}
+
 .small-padding-horizontal {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -203,7 +207,7 @@ div#throbber {
 
 #footer {
     margin: auto auto 0 auto;
-    padding: 0;
+    padding: 1rem 0 0 0;
 }
 
 #footer hr {
