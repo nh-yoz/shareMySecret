@@ -133,6 +133,10 @@ input, select {
     margin: 0;
 }
 
+#send-result-go-home {
+    margin-top: 1.5rem;
+}
+
 .small-padding-horizontal {
     padding-left: 1rem;
     padding-right: 1rem;

@@ -71,16 +71,18 @@
                         Copy to clipboard
                     </button>
                     <div>
-                        <label for="send-result-link">Want to send this link? Enter email-addresses:</label>
+                        <label for="send-result-link">Want to send this link? Enter email-addresses</label>
                         <input type="text" class="full-width" spellcheck="false" id="send-result-email-addresses" value="">
                     </div>
                     <div class="flex flex-row justify">
-                        <p class="error hide" id="send-result_email-address_error">&nbsp;</p>
+                        <div>
+                            <p class="error hide" id="send-result_email-address_error">&nbsp;</p>
+                            <p class="info" id="send-result_email-result">&nbsp;</p>
+                        </div>
                         <button class="small-padding-horizontal no-margin-vertical align-right" id="send-result-email">
                             Send email
                         </button>
                     </div>
-                    <p class="info" id="send-result_email-result">&nbsp;</p>
                     <div>
                         <button id="send-result-go-home">Send a new secret</button>
                     </div>

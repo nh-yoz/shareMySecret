@@ -170,26 +170,26 @@ const showSpinner = (visible) => {
 
 const sendEmail = () => {
     const errEl = document.getElementById('send-result_email-address_error');
-    const resultElement = document.getElementById('send-result_email-result')
-    resultElement.innerHTML = '&nbsp;'
-    const emails = document.getElementById('send-result-email-addresses').value.split(/;|:|,| /g).filter(val => val !== '');
-    const errors = {}
+    const resultElement = document.getElementById('send-result_email-result');
+    resultElement.innerHTML = '&nbsp;';
+    const emailsElement = document.getElementById('send-result-email-addresses');
+    const emails = emailsElement.value.split(/;|:|,| /g).filter(val => val !== '');
+    const errors = {};
     const emailsOk = emails.every(email => {
         if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
             console.log(`email ${email} ok`);
             return true;
         } else {
             console.log(`email ${email} not ok`);
-            errors['send-result_email-address_error'] = `"${email}" is not a valid email`;
+            errors['send-result_email-address_error'] = `"${email}" is not a valid email address`;
             return false;
         }
     })
     setErrors(errors);
-    console.log(emailsOk)
     if (emailsOk) {
         showSpinner(true);
         const controller = new AbortController();
-        const tOutId = setTimeout(() => controller.abort(), 8000)
+        const tOutId = setTimeout(() => controller.abort(), 8000);
         const url = `sendmail.cgi`;
         const body = {
             to: emails,
@@ -223,10 +223,12 @@ const sendEmail = () => {
             .then(res => {
                 if (res.ok) {
                     resultElement.innerHTML = 'The email has been sent';
+                    emailsElement.value = '';
                     resultElement.classList.add('info');
                     resultElement.classList.remove('error');
+                } else {
+                    return Promise.reject(res);
                 }
-                return Promise.reject(res);
             })
             .catch(err => {
                 let error = '';
@@ -258,6 +260,7 @@ window.addEventListener('load', () => {
     document.getElementById('get-result-copy').addEventListener('click', () => copyElementValueToClipboard('get-result-message'));
     document.getElementById('get-result-go-home').addEventListener('click', goHome);
     document.getElementById('get-error-go-home').addEventListener('click', goHome);
+    document.getElementById('send-result-email-addresses').value = '';
     const searchString = window.location.search;
     if (searchString !== '') {
         throbber.direction = 'decrypt'
