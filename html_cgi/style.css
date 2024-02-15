@@ -68,6 +68,14 @@ h1 {
     justify-self: flex-end;
 }
 
+.flex-row.align-left {
+    justify-content: flex-start;
+}
+
+.flex-row.flex-center {
+    align-items: center;
+}
+
 .align-right {
     text-align: right;
 }
@@ -209,9 +217,56 @@ div#throbber {
 }
 */
 
+#svg-pwd-open, #svg-pwd-closed {
+    margin-left: 0.7em;
+    height: 1.2em;
+    stroke: greenyellow;
+    fill: greenyellow;
+    cursor: pointer;
+}
+
+#pwd-form input[type="checkbox"] {
+    width: 1.5em;
+    height: 1.5em;
+    margin-bottom: 1em;
+    accent-color: greenyellow;
+    background-color: blue;
+}
+#pwd-form input[type="number"], input[type="text"] {
+    margin-right: 1em;
+    max-width: 100%;
+}
+
+#pwd-result {
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid greenyellow;
+    padding: 1em;
+    margin: 0.5rem 0 0 0;
+    text-align: center;
+    font-family: "monospace, 'Courier New', Courier";
+    word-wrap: break-word;
+    letter-spacing: 0.07rem;
+    font-size: 1.2em;
+}
+
+#pwd-form-numbers div {
+    max-width: 30%;
+}
+
+.pwd-number {
+    color: lightseagreen
+}
+
+.pwd-special {
+    color: coral
+}
+
+
 #footer {
     margin: auto auto 0 auto;
-    padding: 1rem 0 0 0;
+    padding: 0;
+    margin-top: 2rem;
 }
 
 #footer hr {
@@ -246,4 +301,4 @@ div#throbber {
         stroke-dashoffset: -124;
     }
 }
-
+          

@@ -22,6 +22,11 @@ const setErrors = (errors) => {
         'send-error': '',
         'get-error-error': '',
         'send-result_email-address_error': '',
+        'pwd-form-length-error': '',
+        'pwd-form-number-error': '',
+        'pwd-form-special-error': '',
+        'pwd-form-numbers-error': '',
+        'pwd-form-error': '',
         ...errors
     }
     Object.entries(allErrorsId).forEach(([key, value]) => {
@@ -154,7 +159,11 @@ const goHome = () => {
 
 const copyElementValueToClipboard = (id) => {
     const element = document.getElementById(id);
-    navigator.clipboard.writeText(element.value);
+    let text = element.value
+    if (text === undefined) {
+        text = element.textContent
+    }
+    navigator.clipboard.writeText(text);
     const old = window.getComputedStyle(element , null).getPropertyValue('background-color'); 
     element.animate([{ backgroundColor: 'white' }, { backgroundColor: old }], { duration: 200 })
 }
@@ -249,6 +258,142 @@ const sendEmail = () => {
     }
 }
 
+const showPwdGenerator = (show) => {
+    const elements = [
+        {
+            el: document.getElementById('pwd-form'),
+            show: true
+        },
+        {
+            el: document.getElementById('svg-pwd-open'),
+            show: true
+        },
+        {
+            el: document.getElementById('svg-pwd-closed'),
+            show: false
+        }
+    ]
+    elements.forEach(item => {
+        if (item.show === show) {
+            item.el.classList.remove('no-show')
+        } else {
+            item.el.classList.add('no-show')
+        }
+    })
+}
+
+const validatePwdForm = () => {
+    let isOk = true;
+    const errors = {};
+    let numTotal = 0;
+    const retObj = { length: 0, upper: 0, lower: 0, number: 0, special: 0 };
+    const numberInputArr = ['pwd-form-length', 'pwd-form-number', 'pwd-form-special']
+        .map(id => ({ id, value: document.getElementById(id).value, errId: `${id}-error` }));
+    numberInputArr.forEach(obj => {
+        const val = obj.value;
+        if (!/^[0-9]+$/.test(val) || parseInt(val) < 0) {
+            isOk = false;
+            errors[obj.errId] = 'Not integer >= 0';
+        } else {
+            obj.value = parseInt(obj.value);
+            numTotal += obj.value;
+        }
+    });
+    if (isOk) {
+        if (numberInputArr.find(obj => obj.id === 'pwd-form-length').value > 50) {
+            isOk = false;
+            errors['pwd-form-length-error'] = 'Must be < 50';
+        }
+        if (numTotal / 2 > numberInputArr.find(obj => obj.id === 'pwd-form-length').value) {
+            errors['pwd-form-numbers-error'] = 'Password length is less than total minimums';
+            isOk = false;
+        }
+    }
+    if (['pwd-form-option-upper', 'pwd-form-option-lower', 'pwd-form-option-numbers', 'pwd-form-option-special']
+        .every(id => !document.getElementById(id).checked)) {
+        errors['pwd-form-error'] = 'At least one option must be checked.';
+        isOk = false;
+    }
+    if (isOk) {
+        // Creating retObj
+        Object.entries({ 'pwd-form-option-numbers': 'pwd-form-number', 'pwd-form-option-special': 'pwd-form-special' })
+            .forEach(([key, value]) => {
+                if (!document.getElementById(key).checked) {
+                    numberInputArr.find(obj => obj.id === value).value = 0;
+                }
+            });
+            retObj.length = numberInputArr.find(obj => obj.id === 'pwd-form-length').value;
+            retObj.number = numberInputArr.find(obj => obj.id === 'pwd-form-number').value;
+            retObj.special = numberInputArr.find(obj => obj.id === 'pwd-form-special').value;
+            retObj.upper = document.getElementById('pwd-form-option-upper').checked ? 1 : 0;
+            retObj.lower = document.getElementById('pwd-form-option-lower').checked ? 1 : 0;
+    }
+    setErrors(errors);
+    return isOk ? retObj : false;
+}
+
+const getPassword = (length, upper, lower, number, special) => {
+    const charSet = [
+        { name: 'upper', chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', min: upper, count: 0, class: ''},
+        { name: 'lower', chars: 'abcdefghijklmnopqrstuvwxyz', min: lower, count: 0, class:'' },
+        { name: 'number', chars: '0123456789', min: number, count: 0, class: 'pwd-number' },
+        { name: 'special', chars: '!@#$()[]{}%^&*_-=', min: special, count: 0, class: 'pwd-special' },
+    ]
+    const chars = charSet.reduce((acc, cur) => `${acc}${cur.min > 0 ? cur.chars : ''}`, '');
+    const byteArr = new Uint8Array(length);
+    let pwd = '';
+    let i = 0; // For security max 200 renders
+    do {
+        i++;
+        pwd = '';
+        charSet.forEach(item => item.count = 0);
+        window.crypto.getRandomValues(byteArr);
+        for (let i = 0; i < length; i++) {
+            const car = chars[Math.trunc(byteArr[i] / 256 * chars.length)];
+            if (car === undefined) {
+                console.log(car, i, byteArr[i], byteArr[i] / 255 * chars.length, Math.trunc(byteArr[i] / 256 * chars.length))
+
+            }
+            pwd += car;
+            charSet.every(item => {
+                if (item.chars.includes(car)) {
+                    item.count++;
+                    return false;
+                }
+                return true;
+            })
+        }
+    } while (i < 200 && charSet.some(item => item.count < item.min))
+    
+    const html = pwd.split('').reduce((acc, cur) => {
+        let t;
+        charSet.every(item => {
+            if (item.chars.includes(cur)) {
+                t = `<span class="${item.class}">${cur}</span>`;
+                return false;
+            } else {
+                return true;
+            }
+        });
+        return `${acc}${t}`;
+    }, '');
+
+    return {
+        password: pwd,
+        strength: Math.round(Math.log2(charSet.reduce((acc, cur) => acc + cur.chars.length * Math.min(cur.min, 1), 0) ** length)),
+        html 
+    };
+}
+
+const generatePassword = () => {
+    const retVal = validatePwdForm();
+    if (!!retVal) {
+        pwdObj = getPassword(retVal.length, retVal.upper, retVal.lower, retVal.number, retVal.special);
+        document.getElementById('pwd-result').innerHTML = pwdObj.html;
+        document.getElementById('pwd-strength').innerHTML = `${pwdObj.strength} (${Object.entries({'very weak': 20, 'weak': 45, 'reasonable': 65, 'strong': 100, 'very strong': 130, 'extremely strong': 100000})
+                .reduce((acc, [key, value]) => acc !== '' ? acc : pwdObj.strength < value ? key : '', '')})`;
+    }
+}
 
 window.addEventListener('load', () => {
     const throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', { speedFactor: 0.5 });
@@ -260,6 +405,10 @@ window.addEventListener('load', () => {
     document.getElementById('get-result-copy').addEventListener('click', () => copyElementValueToClipboard('get-result-message'));
     document.getElementById('get-result-go-home').addEventListener('click', goHome);
     document.getElementById('get-error-go-home').addEventListener('click', goHome);
+    document.getElementById('svg-pwd-open').addEventListener('click', () => showPwdGenerator(false));
+    document.getElementById('svg-pwd-closed').addEventListener('click', () => showPwdGenerator(true));
+    document.getElementById('pwd-copy').addEventListener('click', () => copyElementValueToClipboard('pwd-result'));
+    document.getElementById('pwd-send').addEventListener('click', () => generatePassword());
     document.getElementById('send-result-email-addresses').value = '';
     const searchString = window.location.search;
     if (searchString !== '') {
@@ -269,4 +418,5 @@ window.addEventListener('load', () => {
     } else {
         setView('send');
     };
+    generatePassword();
 })
