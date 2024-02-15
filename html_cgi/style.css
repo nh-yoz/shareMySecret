@@ -237,8 +237,8 @@ div#throbber {
 }
 
 #svg-pwd-open, #svg-pwd-closed {
-    margin-left: 0.7em;
-    height: 1.2em;
+    margin: 0 0 0.1em 0.7em;
+    height: 1.3em;
     stroke: greenyellow;
     fill: greenyellow;
     cursor: pointer;
