@@ -217,6 +217,10 @@ div#throbber {
 }
 */
 
+.mb-s {
+    margin-bottom: 0.5em;
+}
+
 #svg-pwd-open, #svg-pwd-closed {
     margin-left: 0.7em;
     height: 1.2em;
@@ -228,7 +232,6 @@ div#throbber {
 #pwd-form input[type="checkbox"] {
     width: 1.5em;
     height: 1.5em;
-    margin-bottom: 1em;
     accent-color: greenyellow;
     background-color: blue;
 }
