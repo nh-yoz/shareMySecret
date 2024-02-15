@@ -6,7 +6,7 @@ body {
     background-color: black;
     color: greenyellow;
     font-family: Arial, Helvetica, sans-serif;
-    line-height: 1.4em;
+    /* line-height: 1.4em; */
     width: 100vw;
     min-height: calc(100vh - 3rem);
     margin: 0;
@@ -29,6 +29,12 @@ body {
 h1 {
     padding: 0;
     margin: 0; 
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0;
 }
 
 .flex {
@@ -80,10 +86,19 @@ h1 {
     text-align: right;
 }
 
-label {
+.flex.wrap {
+    flex-wrap: wrap;
+}
+
+.flex-row.align-bottom {
+    align-items: flex-end;
+}
+
+label, legend {
     padding: 0;
     display: block;
-    margin: 1.5rem 0 0.4rem 0
+    line-height: 1em;
+    margin: 1.5rem 0 0 0
 }
 
 p.info, p.error {
@@ -109,7 +124,7 @@ input, textarea, select, button {
     color: black;
     border: 1px solid rgb(176, 176, 176);
     border-radius: 2px;
-    margin: 0;
+    margin: 0.25rem 0 0 0;
     padding: 0.5rem;
 }
 
@@ -234,14 +249,22 @@ div#throbber {
     height: 1.5em;
     accent-color: greenyellow;
     background-color: blue;
+    margin: 0;
 }
+
 #pwd-form input[type="number"], input[type="text"] {
     margin-right: 1em;
     max-width: 100%;
 }
 
+fieldset {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+    border: none;
+}
+
 #pwd-result {
-    width: 100%;
+    max-width: 100%;
     border-radius: 5px;
     border: 1px solid greenyellow;
     padding: 1em;
