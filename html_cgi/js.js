@@ -183,7 +183,7 @@ const sendEmail = () => {
     resultElement.innerHTML = '&nbsp;';
     const emailsElement = document.getElementById('send-result-email-addresses');
     const emails = emailsElement.value.split(/;|:|,| /g).filter(val => val !== '');
-    const subject = document.getElementById('send-result-email-subject).value;
+    const subject = document.getElementById('send-result-email-subject').value;
     const errors = {};
     const emailsOk = emails.every(email => {
         if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
