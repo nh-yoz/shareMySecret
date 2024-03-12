@@ -87,6 +87,10 @@
                             Want to send this link? Enter email-addresses
                             <input type="text" class="full-width" spellcheck="false" id="send-result-email-addresses" value="">
                         </label>
+                        <label>
+                            Subject
+                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-subject" value="You've got a secret message">
+                        </label>
                     </div>
                     <div class="flex flex-row justify">
                         <div>
@@ -135,7 +139,7 @@
                             <div class="flex flex-col">
                                 <div>
                                     <p id="pwd-result"></p>
-                                    <p class="info">Calculated strength in bits: <span id="pwd-strength">10 (Weak)</span></p>
+                                    <p class="info">Calculated strength in bits: <span id="pwd-strength">15 (strong)</span></p>
                                 </div>
                                 <button style="margin-left:auto" class="small-padding-horizontal no-margin-vertical align-right" id="pwd-copy">
                                     Copy to clipboard
@@ -145,7 +149,7 @@
                                 <div>
                                     <label>
                                         Length
-                                        <input id="pwd-form-length" type="number" value="10">
+                                        <input id="pwd-form-length" type="number" value="15">
                                     </label>
                                     <p id="pwd-form-length-error" class="small-padding-horizontal error hide">get-error-error</p>
                                 </div>
