@@ -183,6 +183,7 @@ const sendEmail = () => {
     resultElement.innerHTML = '&nbsp;';
     const emailsElement = document.getElementById('send-result-email-addresses');
     const emails = emailsElement.value.split(/;|:|,| /g).filter(val => val !== '');
+    const subject = document.getElementById('send-result-email-addresses').value;
     const errors = {};
     const emailsOk = emails.every(email => {
         if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
@@ -202,7 +203,7 @@ const sendEmail = () => {
         const url = `sendmail.cgi`;
         const body = {
             to: emails,
-            subject: "You've got a secret message",
+            subject: subject,
             text_message: `Hello,\n\n
                 A secret message has been sent to you. To view the message, use the link below.\n\n
                 ${document.getElementById('send-result-link').value}\n\n\n
