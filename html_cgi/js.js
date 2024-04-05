@@ -56,19 +56,22 @@ const validateForm = () => {
     const errors = {};
     if (obj.secret_message.length === 0) {
         errors['send-message-error'] = "May not be empty";
-    }
-    else if (obj.secret_message.length > 2000) {
+    } else if (obj.secret_message.length > 2000) {
         errors['send-message-error'] = "Too many characters (max 2000)";
     }
-    
+
     if (!/^[0-9]+$/.test(obj.max_views)) {
         errors['send-limit-views-error'] = "Must be an integer >= 0";
     }
     if (/^[0-9]+$/.test(obj.expires_in_value) && parseInt(obj.expires_in_value, 10) > 0) {
         const val = parseInt(obj.expires_in_value, 10);
-        testObj = { 'd': 30, 'h': 30*24, 'm': 30*24*60 }
+        testObj = {
+            'd': 30,
+            'h': 30 * 24,
+            'm': 30 * 24 * 60
+        }
         if (val > testObj[obj.expires_in_unit]) {
-            errors['send-expires-error'] = "Must at most be 30 days";    
+            errors['send-expires-error'] = "Must at most be 30 days";
         }
     } else {
         errors['send-expires-error'] = "Must be a positive integer";
@@ -78,14 +81,25 @@ const validateForm = () => {
 }
 
 const send = () => {
-    if (!validateForm()) { return; }
+    if (!validateForm()) {
+        return;
+    }
     throbber.direction = 'crypt'
     showSpinner(true);
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 8000)
     const url = 'sharesecret.cgi?method=post';
-    const headers = { "Content-Type": "application/json" }
-    fetch(url, { method: "POST", headers, body: JSON.stringify(getJson(true)), signal: controller.signal })
+    const headers = {
+        "Content-Type": "application/json",
+        "Origin": window.location.hostname,
+        "X-Requested-With": window.location.hostname
+    }
+    fetch(url, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(getJson(true)),
+            signal: controller.signal
+        })
         .then(res => {
             if (res.ok) {
                 return res.json();
@@ -104,9 +118,13 @@ const send = () => {
             // console.log(err);
             clearTimeout(tOutId);
             if (err.name && err.name === 'AbortError') {
-                setErrors({ 'send-error': 'The server took too long to respond. Try again later.' });
+                setErrors({
+                    'send-error': 'The server took too long to respond. Try again later.'
+                });
             } else {
-                setErrors({ 'send-error': 'An error occurred, please try again later.' });
+                setErrors({
+                    'send-error': 'An error occurred, please try again later.'
+                });
             }
             showSpinner(false);
         })
@@ -116,7 +134,10 @@ const get = (token) => {
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 8000)
     const url = `sharesecret.cgi?method=get&token=${token}`;
-    fetch(url, { method: "GET", signal: controller.signal })
+    fetch(url, {
+            method: "GET",
+            signal: controller.signal
+        })
         .then(res => {
             if (res.ok) {
                 return res.json();
@@ -131,7 +152,7 @@ const get = (token) => {
             setView('get-result');
             showSpinner(false);
         })
-       .catch(err => {
+        .catch(err => {
             clearTimeout(tOutId);
             let error = '';
             if ([400, 404, 410].includes(err.status)) {
@@ -143,7 +164,9 @@ const get = (token) => {
                     error = 'The server encountered an error while treating the request. Try again later.'
                 }
             }
-            setErrors({ 'get-error-error' : error });
+            setErrors({
+                'get-error-error': error
+            });
             setView('get-error');
             showSpinner(false);
         })
@@ -164,8 +187,14 @@ const copyElementValueToClipboard = (id) => {
         text = element.textContent
     }
     navigator.clipboard.writeText(text);
-    const old = window.getComputedStyle(element , null).getPropertyValue('background-color'); 
-    element.animate([{ backgroundColor: 'white' }, { backgroundColor: old }], { duration: 200 })
+    const old = window.getComputedStyle(element, null).getPropertyValue('background-color');
+    element.animate([{
+        backgroundColor: 'white'
+    }, {
+        backgroundColor: old
+    }], {
+        duration: 200
+    })
 }
 
 const showSpinner = (visible) => {
@@ -184,6 +213,7 @@ const sendEmail = () => {
     const emailsElement = document.getElementById('send-result-email-addresses');
     const emails = emailsElement.value.split(/;|:|,| /g).filter(val => val !== '');
     const subject = document.getElementById('send-result-email-subject').value;
+//    const sender = document.getElementById('send-result-email-sender').value;
     const errors = {};
     const emailsOk = emails.every(email => {
         if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
@@ -195,6 +225,7 @@ const sendEmail = () => {
             return false;
         }
     })
+
     setErrors(errors);
     if (emailsOk) {
         showSpinner(true);
@@ -222,14 +253,18 @@ const sendEmail = () => {
                     </style>
                 </head>
                 <body>
-                    <p>Hello</p>
+                    <p>Hello,</p>
                     <p>A secret message has been sent to you.</p>
                     <p>To view the message, click <a href="${document.getElementById('send-result-link').value}">here</a>.</p>
                     <p>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
                 </body>
             </html>`
         };
-        fetch(url, { method: "POST", signal: controller.signal, body: JSON.stringify(body) })
+        fetch(url, {
+                method: "POST",
+                signal: controller.signal,
+                body: JSON.stringify(body)
+            })
             .then(res => {
                 if (res.ok) {
                     resultElement.innerHTML = 'The email has been sent';
@@ -255,25 +290,21 @@ const sendEmail = () => {
                 clearTimeout(tOutId);
                 showSpinner(false);
             })
-    
+
     }
 }
 
 const showPwdGenerator = (show) => {
-    const elements = [
-        {
-            el: document.getElementById('pwd-form'),
-            show: true
-        },
-        {
-            el: document.getElementById('svg-pwd-open'),
-            show: true
-        },
-        {
-            el: document.getElementById('svg-pwd-closed'),
-            show: false
-        }
-    ]
+    const elements = [{
+        el: document.getElementById('pwd-form'),
+        show: true
+    }, {
+        el: document.getElementById('svg-pwd-open'),
+        show: true
+    }, {
+        el: document.getElementById('svg-pwd-closed'),
+        show: false
+    }]
     elements.forEach(item => {
         if (item.show === show) {
             item.el.classList.remove('no-show')
@@ -286,9 +317,19 @@ const showPwdGenerator = (show) => {
 const validatePwdForm = () => {
     let isOk = true;
     const errors = {};
-    const retObj = { length: 0, upper: 0, lower: 0, number: 0, special: 0 };
+    const retObj = {
+        length: 0,
+        upper: 0,
+        lower: 0,
+        number: 0,
+        special: 0
+    };
     const numberInputArr = ['pwd-form-length', 'pwd-form-number', 'pwd-form-special']
-        .map(id => ({ id, value: document.getElementById(id).value, errId: `${id}-error` }));
+        .map(id => ({
+            id,
+            value: document.getElementById(id).value,
+            errId: `${id}-error`
+        }));
     numberInputArr.forEach(obj => {
         const val = obj.value;
         if (!/^[0-9]+$/.test(val) || parseInt(val) < 0) {
@@ -299,9 +340,9 @@ const validatePwdForm = () => {
         }
     });
     if (isOk) {
-        if (numberInputArr.find(obj => obj.id === 'pwd-form-length').value > 50) {
+        if (numberInputArr.find(obj => obj.id === 'pwd-form-length').value > 200) {
             isOk = false;
-            errors['pwd-form-length-error'] = 'Must be <= 50';
+            errors['pwd-form-length-error'] = 'Must be <= 200';
         }
     }
     if (['pwd-form-option-upper', 'pwd-form-option-lower', 'pwd-form-option-numbers', 'pwd-form-option-special']
@@ -311,7 +352,10 @@ const validatePwdForm = () => {
     }
     if (isOk) {
         // Creating retObj
-        Object.entries({ 'pwd-form-option-numbers': 'pwd-form-number', 'pwd-form-option-special': 'pwd-form-special' })
+        Object.entries({
+                'pwd-form-option-numbers': 'pwd-form-number',
+                'pwd-form-option-special': 'pwd-form-special'
+            })
             .forEach(([key, value]) => {
                 if (!document.getElementById(key).checked) {
                     numberInputArr.find(obj => obj.id === value).value = 0;
@@ -347,12 +391,31 @@ const getPassword = (length, upper, lower, number, special) => {
         return charArr.join('');
     }
 
-    const charSet = [
-        { name: 'upper', chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', min: upper, count: 0, class: ''},
-        { name: 'lower', chars: 'abcdefghijklmnopqrstuvwxyz', min: lower, count: 0, class:'' },
-        { name: 'number', chars: '0123456789', min: number, count: 0, class: 'pwd-number' },
-        { name: 'special', chars: '!@#$()[]{}%^&*_-=', min: special, count: 0, class: 'pwd-special' },
-    ]
+    const charSet = [{
+        name: 'upper',
+        chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        min: upper,
+        count: 0,
+        class: ''
+    }, {
+        name: 'lower',
+        chars: 'abcdefghijklmnopqrstuvwxyz',
+        min: lower,
+        count: 0,
+        class: ''
+    }, {
+        name: 'number',
+        chars: '0123456789',
+        min: number,
+        count: 0,
+        class: 'pwd-number'
+    }, {
+        name: 'special',
+        chars: '!@#$()[]{}%^&*_-=',
+        min: special,
+        count: 0,
+        class: 'pwd-special'
+    }, ]
     const [chars, initPwd] = charSet.reduce((acc, cur) => [`${acc[0]}${cur.min > 0 ? cur.chars : ''}`, `${acc[1]}${getRandomChars(cur.chars, cur.min)}`], ['', '']);
     const pwd = shuffleString(`${initPwd}${getRandomChars(chars, length - initPwd.length)}`);
     const html = pwd.split('').reduce((acc, cur) => {
@@ -371,7 +434,7 @@ const getPassword = (length, upper, lower, number, special) => {
     return {
         password: pwd,
         strength: Math.round(Math.log2(charSet.reduce((acc, cur) => acc + cur.chars.length * Math.min(cur.min, 1), 0) ** length)),
-        html 
+        html
     };
 }
 
@@ -383,13 +446,19 @@ const generatePassword = () => {
     } else {
         pwdObj = getPassword(retVal.length, retVal.upper, retVal.lower, retVal.number, retVal.special);
         document.getElementById('pwd-result').innerHTML = pwdObj.html;
-        document.getElementById('pwd-strength').innerHTML = `${pwdObj.strength} (${Object.entries({'very weak': 20, 'weak': 45, 'reasonable': 65, 'strong': 100, 'very strong': 130, 'extremely strong': 100000})
+        if (pwdObj.strength > 1000) {
+            document.getElementById('pwd-strength').innerHTML = '> 1000 (insane)';
+        } else {
+            document.getElementById('pwd-strength').innerHTML = `${pwdObj.strength} (${Object.entries({'very weak': 20, 'weak': 45, 'reasonable': 65, 'strong': 100, 'very strong': 130, 'extremely strong': 500, 'insane': 1001, 'insane': Infinity})
                 .reduce((acc, [key, value]) => acc !== '' ? acc : pwdObj.strength < value ? key : '', '')})`;
+        }
     }
 }
 
 window.addEventListener('load', () => {
-    const throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', { speedFactor: 0.5 });
+    const throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
+        speedFactor: 0.5
+    });
     document.getElementById('send-message').addEventListener('input', () => messageChange());
     document.getElementById('send-send').addEventListener('click', () => send());
     document.getElementById('send-result-copy').addEventListener('click', () => copyElementValueToClipboard('send-result-link'));
