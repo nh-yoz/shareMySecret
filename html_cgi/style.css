@@ -263,6 +263,14 @@ fieldset {
     border: none;
 }
 
+fieldset hr {
+    width: 4rem;
+    border: 1px dashed yellowgreen;
+    text-align: left;
+    margin-left: 0px;
+}
+    
+
 #pwd-result {
     max-width: 100%;
     border-radius: 5px;
