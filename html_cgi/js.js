@@ -286,7 +286,7 @@ const showPwdGenerator = (show) => {
 const validatePwdForm = () => {
     let isOk = true;
     const errors = {};
-    const retObj = { length: 0, upper: 0, lower: 0, number: 0, special: 0 };
+    const retObj = { length: 0, upper: 0, lower: 0, number: 0, special: 0, ignoreAmbigious: 0 };
     const numberInputArr = ['pwd-form-length', 'pwd-form-number', 'pwd-form-special']
         .map(id => ({ id, value: document.getElementById(id).value, errId: `${id}-error` }));
     numberInputArr.forEach(obj => {
@@ -306,7 +306,7 @@ const validatePwdForm = () => {
     }
     if (['pwd-form-option-upper', 'pwd-form-option-lower', 'pwd-form-option-numbers', 'pwd-form-option-special']
         .every(id => !document.getElementById(id).checked)) {
-        errors['pwd-form-error'] = 'At least one option must be checked.';
+        errors['pwd-form-error'] = 'At least one character-type option must be checked.';
         isOk = false;
     }
     if (isOk) {
@@ -322,6 +322,7 @@ const validatePwdForm = () => {
         retObj.special = Math.max(document.getElementById('pwd-form-option-special').checked ? 1 : 0, numberInputArr.find(obj => obj.id === 'pwd-form-special').value);
         retObj.upper = document.getElementById('pwd-form-option-upper').checked ? 1 : 0;
         retObj.lower = document.getElementById('pwd-form-option-lower').checked ? 1 : 0;
+        retObj.ignoreAmbigious = document.getElementById('pwd-form-option-ambiguous').checked ? 1 : 0;
         if (Object.entries(retObj).reduce((acc, [key, value]) => acc + (key === 'length' ? value : -value), 0) < 0) {
             errors['pwd-form-numbers-error'] = 'Password length is less than minimums and options.';
             isOk = false;
@@ -331,7 +332,7 @@ const validatePwdForm = () => {
     return isOk ? retObj : false;
 }
 
-const getPassword = (length, upper, lower, number, special) => {
+const getPassword = (length, upper, lower, number, special, ignoreAmbigious) => {
     const getRandomChars = (chars, count) => {
         const valueArr = window.crypto.getRandomValues(new Uint8Array(count));
         return valueArr.reduce((acc, cur) => `${acc}${chars[Math.trunc(cur / 256 * chars.length)]}`, '');
@@ -353,6 +354,9 @@ const getPassword = (length, upper, lower, number, special) => {
         { name: 'number', chars: '0123456789', min: number, count: 0, class: 'pwd-number' },
         { name: 'special', chars: '!@#$()[]{}%^&*_-=', min: special, count: 0, class: 'pwd-special' },
     ]
+    if (ignoreAmbigious) {
+        charSet.forEach(obj => obj.chars = obj.chars.replace(/[|Il10O]/g, ''));
+    }
     const [chars, initPwd] = charSet.reduce((acc, cur) => [`${acc[0]}${cur.min > 0 ? cur.chars : ''}`, `${acc[1]}${getRandomChars(cur.chars, cur.min)}`], ['', '']);
     const pwd = shuffleString(`${initPwd}${getRandomChars(chars, length - initPwd.length)}`);
     const html = pwd.split('').reduce((acc, cur) => {
@@ -381,7 +385,7 @@ const generatePassword = () => {
         document.getElementById('pwd-result').innerHTML = '&nbsp;';
         document.getElementById('pwd-strength').innerHTML = ''
     } else {
-        pwdObj = getPassword(retVal.length, retVal.upper, retVal.lower, retVal.number, retVal.special);
+        pwdObj = getPassword(retVal.length, retVal.upper, retVal.lower, retVal.number, retVal.special, retVal.ignoreAmbigious);
         document.getElementById('pwd-result').innerHTML = pwdObj.html;
         document.getElementById('pwd-strength').innerHTML = `${pwdObj.strength} (${Object.entries({'very weak': 20, 'weak': 45, 'reasonable': 65, 'strong': 100, 'very strong': 130, 'extremely strong': 100000})
                 .reduce((acc, [key, value]) => acc !== '' ? acc : pwdObj.strength < value ? key : '', '')})`;
