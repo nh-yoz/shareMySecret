@@ -236,7 +236,7 @@ const sendEmail = () => {
             to: emails,
             subject,
             text_message: `Hello,\n\n
-                A secret message has been sent to you. To view the message, use the link below.\n\n
+                A secret message has been sent to you via secret.niklashook.fr. To view the message, use the link below.\n\n
                 ${document.getElementById('send-result-link').value}\n\n\n
                 Want to send secret messages? Visit ${window.location.href}`,
             html_message: `<html lang="en">
@@ -244,19 +244,19 @@ const sendEmail = () => {
                     <meta charset="UTF-8">
                     <style>
                         body {
-                            background-color: black;
-                            color: greenyellow;
+                            /* background-color: black;
+                            color: greenyellow; */
                             font-family: Arial, Helvetica, sans-serif;
                             line-height: 1.4em;
                         }
-                        p, a { font-size: 1rem; color: inherit; }
+                        /* p, a { font-size: 1rem; color: inherit; } */
                     </style>
                 </head>
                 <body>
                     <p>Hello,</p>
-                    <p>A secret message has been sent to you.</p>
+                    <p>A secret message has been sent to you via secret.niklashook.fr.</p>
                     <p>To view the message, click <a href="${document.getElementById('send-result-link').value}">here</a>.</p>
-                    <p>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
+                    <p>---<br>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
                 </body>
             </html>`
         };
