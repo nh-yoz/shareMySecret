@@ -459,6 +459,7 @@ window.addEventListener('load', () => {
         'pwd-form-option-lower',
         'pwd-form-option-numbers',
         'pwd-form-option-special',
+        'pwd-form-option-ambiguous',
         'pwd-send'
     ].forEach(id => document.getElementById(id).addEventListener('click', generatePassword));
     document.getElementById('send-result-email-addresses').value = '';
