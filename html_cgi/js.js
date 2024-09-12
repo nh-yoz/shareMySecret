@@ -232,6 +232,11 @@ const sendEmail = () => {
         const controller = new AbortController();
         const tOutId = setTimeout(() => controller.abort(), 8000);
         const url = `sendmail.cgi`;
+        const headers = {
+	    "Content-Type": "application/json",
+	    "Origin": window.location.hostname,
+	    "X-Requested-With": window.location.hostname
+        }
         const body = {
             to: emails,
             subject,
@@ -239,7 +244,7 @@ const sendEmail = () => {
                 A secret message has been sent to you via secret.niklashook.fr. To view the message, use the link below.\n\n
                 ${document.getElementById('send-result-link').value}\n\n\n
                 Want to send secret messages? Visit ${window.location.href}`,
-            html_message: `<html lang="en">
+            html_message: btoa(`<html lang="en">
                 <head>
                     <meta charset="UTF-8">
                     <style>
@@ -258,10 +263,11 @@ const sendEmail = () => {
                     <p>To view the message, click <a href="${document.getElementById('send-result-link').value}">here</a>.</p>
                     <p>---<br>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
                 </body>
-            </html>`
+            </html>`)
         };
         fetch(url, {
                 method: "POST",
+		headers,
                 signal: controller.signal,
                 body: JSON.stringify(body)
             })

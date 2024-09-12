@@ -1,14 +1,15 @@
 #!/usr/bin/python3
-import smtplib, json, collections.abc, traceback, sys, re
+import smtplib, json, collections.abc, traceback, sys, re, base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-smtp_host = 'smtp.example.com'
+
+smtp_host = 'mail.niklashook.fr'
 smtp_port = 465
 smtp_ssl = True
-smtp_from = 'my_app@example.com'
-smtp_auth = True # To authenticate to mail server
-smtp_credentials = ('username', 'secret_password')
+smtp_from = 'Share my secret <secret@niklashook.fr>'
+smtp_auth = True
+smtp_credentials = ('secret', 'ZZhxLM23C!69^Yq8Hq4cHDxY@aW$AM')
 send_traceback = True # If unexpected error, responds with traceback in json
 
 email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
@@ -33,6 +34,11 @@ def is_valid_email(email: str) -> bool:
 def is_string(value) -> bool:
     return type(value) == str
 
+def is_base64(value) -> bool:
+    try:
+        return base64.b64encode(base64.b64decode(value)).decode('utf-8') == value
+    except Exception:
+        return False
 
 def is_string_array(value) -> bool:
     if not isinstance(value, list):
@@ -57,6 +63,11 @@ def validate_body(obj):
         elif not test_dict[key][1](obj[key]):
             respond_with_error(400, f'The property "{key}" should be {test_dict[key][0]}')
             return False
+    if not is_base64(obj['html_message']):
+        respond_with_error(400, f'The property "{key}" should be base64 encoded')
+        return False
+    if is_base64(obj['html_message']):
+        obj['html_message'] = base64.b64decode(obj['html_message']).decode('utf-8')
     for email_address in obj['to']:
         if not is_valid_email(email_address):
             respond_with_error(400, f'{email_address} is not a valid email address')
@@ -66,6 +77,7 @@ def validate_body(obj):
 
 def send_mail(obj):
     global smtp_host, smtp_port, smtp_ssl, smtp_from, smtp_auth, smtp_credentials
+    #msg = EmailMessage()
     msg = MIMEMultipart("alternative")
     msg['From'] = smtp_from
     msg['To'] = ", ".join(obj['to'])
@@ -84,7 +96,7 @@ def send_mail(obj):
 ##########################
 
 print('Content-type: application/json')
-print('Access-Control-Allow-Origin: https://misc.niklashook.fr')
+print('Access-Control-Allow-Origin: https://secret.niklashook.fr')
 print('Vary: Origin')
 print('Cache-Control: no-store')
 try:
