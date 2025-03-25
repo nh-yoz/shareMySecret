@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+smtp_host = 'mail.domain.any'
+smtp_port = 465
+smtp_ssl = True
+smtp_from = 'Share my secret <me@domain.any>'
+smtp_auth = True
+smtp_username = 'email_user'
+smtp_password = '******************************'
+cors='https://my.domain.any'
+max_secret_body_length = 1048576
+max_email_body_length = 102400
+
+

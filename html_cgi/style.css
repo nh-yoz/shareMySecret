@@ -1,0 +1,339 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: black;
+    color: greenyellow;
+    font-family: Arial, Helvetica, sans-serif;
+    /* line-height: 1.4em; */
+    width: 100vw;
+    min-height: calc(100vh - 3rem);
+    margin: 0;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#main {
+    max-width: 500px;
+    flex-grow: 1;
+}
+
+h1 {
+    padding: 0;
+    margin: 0; 
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0;
+}
+
+.flex {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.flex-row {
+    flex-direction: row;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.flex-row.justify {
+    justify-content: space-between;
+}
+
+.flex-row.align-right {
+    justify-content: flex-end;
+}
+
+.flex-col .align-right {
+    align-self: flex-end;
+}
+
+.flex-col .align-left {
+    align-self: flex-start;
+}
+
+.flex-row .align-right {
+    justify-self: flex-end;
+}
+
+.flex-row.align-left {
+    justify-content: flex-start;
+}
+
+.flex-row.flex-center {
+    align-items: center;
+}
+
+.align-right {
+    text-align: right;
+}
+
+.flex.wrap {
+    flex-wrap: wrap;
+}
+
+.flex-row.align-bottom {
+    align-items: flex-end;
+}
+
+label, legend {
+    padding: 0;
+    display: block;
+    line-height: 1em;
+    margin: 1.5rem 0 0 0
+}
+
+p.info, p.error {
+    padding: 0;
+    margin: 0.3rem 0 0 0;
+    line-height: 1em;
+}
+
+.info {
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+.error {
+    color: red;
+    font-size: 0.85em;
+}
+
+input, textarea, select, button {
+    background-color: rgb(164, 164, 164);
+    height: 30px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: black;
+    border: 1px solid rgb(176, 176, 176);
+    border-radius: 2px;
+    margin: 0.25rem 0 0 0;
+    padding: 0.5rem;
+}
+
+select {
+    padding: 0 0 0 0.5rem;
+}
+
+textarea {
+    resize: none;
+    height: 14em;
+    width: 100%;
+}
+
+button {
+    margin: 0;
+    padding: 0 3rem;
+    cursor: pointer;
+}
+
+input, select {
+    max-width: 100%;
+}
+
+#send-expires-value, #send-expires-unit {
+    width: 47%;
+}
+
+#send-result_email-address_error {
+    margin: 0;
+}
+
+#send-result-go-home {
+    margin-top: 1.5rem;
+}
+
+.small-padding-horizontal {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.no-margin {
+    margin: 0
+}
+
+.no-margin-vertical {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.small-margin-vertical {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.hide {
+    opacity: 0;
+}
+
+.no-show {
+    display: none !important;
+}
+
+div#throbber-container {
+    z-index: 2;
+    position: fixed;
+    left:0;
+    top:0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+div#throbber {
+    z-index: 5;
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    font-size: 1.25em;
+    transform: translate(50%,-50%);
+    border: 1px solid yellowgreen;
+    background-color: black;
+    padding: 1.5em;
+    margin: -35px 0 0 -35px;
+}
+
+/* div#spinner {
+    z-index: 2;
+    position: fixed;
+    left:0;
+    top:0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.spinner {
+    animation: rotate 2s linear infinite;
+    z-index: 3;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -35px 0 0 -35px;
+    width: 70px;
+    height: 70px;
+}
+*/
+
+.mb-s {
+    margin-bottom: 0.5em;
+}
+
+#svg-pwd-open, #svg-pwd-closed {
+    margin: 0 0 0.1em 0.7em;
+    height: 1.3em;
+    stroke: greenyellow;
+    fill: greenyellow;
+    cursor: pointer;
+}
+
+#pwd-form input[type="checkbox"] {
+    width: 1.5em;
+    height: 1.5em;
+    accent-color: greenyellow;
+    background-color: blue;
+    margin: 0;
+}
+
+#pwd-form input[type="number"], input[type="text"] {
+    margin-right: 1em;
+    max-width: 100%;
+}
+
+fieldset {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+    border: none;
+}
+
+fieldset hr {
+    width: 4rem;
+    border: 1px dashed yellowgreen;
+    text-align: left;
+    margin-left: 0px;
+}
+    
+
+#pwd-result {
+    max-width: 100%;
+    border-radius: 5px;
+    border: 1px solid greenyellow;
+    padding: 1em;
+    margin: 0.5rem 0 0 0;
+    text-align: center;
+    font-family: "monospace, 'Courier New', Courier";
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.07rem;
+    font-size: 1.2em;
+}
+
+#pwd-form-numbers div {
+    max-width: 30%;
+}
+
+.pwd-number {
+    color: lightseagreen
+}
+
+.pwd-special {
+    color: coral
+}
+
+
+#footer {
+    margin: auto auto 0 auto;
+    padding: 0;
+    margin-top: 2rem;
+}
+
+#footer hr {
+    width: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid yellowgreen;
+}
+
+.path {
+    stroke: greenyellow;
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+  
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+    }
+    100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+    }
+}
+          

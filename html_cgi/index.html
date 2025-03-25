@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Share your secrets: Encrypt text messages and get a unique link to decrypt it or send it by email. 128-bit encryption, keys not stored, no logs, no cache, no tracking. The app includes a password generator."/>
+        <meta name="keywords" content="Secret encryption password generator message">
+        <meta property="og:title" content="Share my secret"/>
+        <meta property="og:url" content="https://secret.niklashook.fr/index.html"/>
+        <meta property="og:description" content="Share your secrets: Encrypt text messages and get a unique link to decrypt it or send it by email. 128-bit encryption, keys not stored, no logs, no cache, no tracking. The app includes a password generator.">
+        <meta property="og:image" content="https://secret.niklashook.fr/crypt.png"><meta property="og:type" content="web-app">
+        <title>Share my secret</title>
+        <meta charset="UTF-8">
+        <link rel="icon" type="image/png" href="favicon-trans16x16.png" sizes="16x16">
+        <link rel="icon" type="image/png" href="favicon-trans32x32.png" sizes="32x32">
+        <link rel="stylesheet" type="text/css" href="style.css">
+	    <script src="crypt-throbber.js" async type="text/javascript"></script>
+        <script src="js.js" async type="text/javascript"></script>
+    </head>
+    <body>
+        <div id="throbber-container" class="no-show">
+            <div id="throbber">
+
+            </div>
+        </div>
+<!--        <div id="spinner" >
+            <svg class="spinner" viewBox="0 0 50 50">
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="3"></circle>
+            </svg>
+        </div>
+    -->
+        <div id="container">
+            <div id="main">
+                <h1 class="align-left">Share my secret</h1>
+                <p class="info align-left">128-bit encryption, keys not stored, no cache, no tracking</p><br>
+                <noscript>Javascript is required. Please activate it.</noscript>
+                <div class="flex flex-col no-show" id="send">
+                    <div>
+                        <label>
+                            Enter secret message*
+                            <textarea maxlength="2000" spellcheck="false" name="send-message" id="send-message"></textarea>
+                        </label>
+                        <div class="flex flex-row justify">
+                            <p class="error hide" id="send-message-error">send-message-error</p>
+                            <p class="info align-right" id="send-message-char">0/2000</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-row justify">
+                        <div >
+                            <label>
+                                Max number of views*
+                                <input type="number" name="send-limit-views" id="send-limit-views" value="0"/>
+                            </label>
+                            <p class="info">0&nbsp;=&nbsp;unlimited </p>
+                            <p class="error hide" id="send-limit-views-error">send-limit-views-error</p>
+                        </div>
+                        <div >
+                            <legend class="label">Expires in*</legend>
+                            <div class="flex justify">
+                                <input type="number" name="send-expires-value" id="send-expires-value" value="1"/>
+                                <select id="send-expires-unit">
+                                    <option selected value="d">day(s)</option>
+                                    <option value="h">hour(s)</option>
+                                    <option value="m">minute(s)</option>
+                                </select>
+                            </div>
+                            <p class="error hide" id="send-expires-error">send-expires-error</p>
+                        </div>
+                    </div>
+                    <button class="align-right" id="send-send">
+                        Send
+                    </button>
+                    <p id="send-error" class="error hide">send-error</p>
+                </div>
+                
+                <div class="flex flex-col no-show" id="send-result">
+                    <div>
+                        <label>
+                            Url to retrieve message
+                            <input type="text" readonly class="full-width" id="send-result-link">
+                        </label>
+                    </div>
+                    <button class="small-padding-horizontal no-margin-vertical align-right" id="send-result-copy">
+                        Copy to clipboard
+                    </button>
+                    <div>
+                        <label>
+                            Want to send this link? Enter email-addresses*
+                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-addresses" value="">
+                        </label>
+<!--                        <label>
+                            Your name
+                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-sender" value="">
+                        </label>
+-->                        <label>
+                            Subject*
+                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-subject" value="You've got a secret message">
+                        </label>
+                    </div>
+                    <div class="flex flex-row justify">
+                        <div>
+                            <p class="error hide" id="send-result_email-address_error">&nbsp;</p>
+                            <p class="info" id="send-result_email-result">&nbsp;</p>
+                        </div>
+                        <button class="small-padding-horizontal no-margin-vertical align-right" id="send-result-email">
+                            Send email
+                        </button>
+                    </div>
+                    <div>
+                        <button id="send-result-go-home">Send a new secret</button>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col no-show" id="get-result">
+                    <div>
+                        <label>
+                            Your secret message
+                            <textarea readonly spellcheck="false" id="get-result-message" name="get-result-message"></textarea>
+                        </label>
+                        <p class="info" id="get-result-expires"></p>
+                        <p class="info" id="get-result-views"></p>
+                    </div>
+                    <button class="small-padding-horizontal no-margin-vertical align-right" id="get-result-copy">
+                        Copy to clipboard
+                    </button>
+                    <button class="align-left" id="get-result-go-home">Send a secret</button>
+                </div>
+                
+                <div id="get-error" class="no-show">
+                    <p id="get-error-error" class="small-padding-horizontal error hide">get-error-error</p>
+                    <div>
+                        <button class="small-margin-vertical" id="get-error-go-home">Send a secret</button>
+                    </div>
+                </div>
+
+                <div id="pwd" class="flex flex-col">
+                    <div class="flex flex-row align-bottom">
+                        <h2>Extra: password generator</h2>
+                        <svg class="no-show" id="svg-pwd-open" viewBox="0 0 24 24"><path d="M12 6c3.79 0 7.17 2.13 8.82 5.5-.59 1.22-1.42 2.27-2.41 3.12l1.41 1.41c1.39-1.23 2.49-2.77 3.18-4.53C21.27 7.11 17 4 12 4c-1.27 0-2.49.2-3.64.57l1.65 1.65C10.66 6.09 11.32 6 12 6m-1.07 1.14L13 9.21c.57.25 1.03.71 1.28 1.28l2.07 2.07c.08-.34.14-.7.14-1.07C16.5 9.01 14.48 7 12 7c-.37 0-.72.05-1.07.14M2.01 3.87l2.68 2.68C3.06 7.83 1.77 9.53 1 11.5 2.73 15.89 7 19 12 19c1.52 0 2.98-.29 4.32-.82l3.42 3.42 1.41-1.41L3.42 2.45zm7.5 7.5 2.61 2.61c-.04.01-.08.02-.12.02-1.38 0-2.5-1.12-2.5-2.5 0-.05.01-.08.01-.13m-3.4-3.4 1.75 1.75c-.23.55-.36 1.15-.36 1.78 0 2.48 2.02 4.5 4.5 4.5.63 0 1.23-.13 1.77-.36l.98.98c-.88.24-1.8.38-2.75.38-3.79 0-7.17-2.13-8.82-5.5.7-1.43 1.72-2.61 2.93-3.53"></path></svg>
+                        <svg id="svg-pwd-closed" viewBox="0 0 24 24"><path d="M12 6c3.79 0 7.17 2.13 8.82 5.5C19.17 14.87 15.79 17 12 17s-7.17-2.13-8.82-5.5C4.83 8.13 8.21 6 12 6m0-2C7 4 2.73 7.11 1 11.5 2.73 15.89 7 19 12 19s9.27-3.11 11-7.5C21.27 7.11 17 4 12 4m0 5c1.38 0 2.5 1.12 2.5 2.5S13.38 14 12 14s-2.5-1.12-2.5-2.5S10.62 9 12 9m0-2c-2.48 0-4.5 2.02-4.5 4.5S9.52 16 12 16s4.5-2.02 4.5-4.5S14.48 7 12 7"></path></svg>
+                    </div>
+                    <div id="pwd-form" class="flex flex-col no-show">
+                        <div>
+                            <div class="flex flex-col">
+                                <div>
+                                    <p id="pwd-result"></p>
+                                    <p class="info">Calculated strength in bits: <span id="pwd-strength">15 (strong)</span></p>
+                                </div>
+                                <button style="margin-left:auto" class="small-padding-horizontal no-margin-vertical align-right" id="pwd-copy">
+                                    Copy to clipboard
+                                </button>
+                            </div>
+                            <div id="pwd-form-numbers" class="flex flex-row justify wrap align-bottom">
+                                <div>
+                                    <label>
+                                        Length
+                                        <input id="pwd-form-length" type="number" value="20">
+                                    </label>
+                                    <p id="pwd-form-length-error" class="small-padding-horizontal error hide">get-error-error</p>
+                                </div>
+                                <div>
+                                    <label>
+                                        Minimum numbers
+                                        <input id="pwd-form-number" type="number" value="1">
+                                    </label>
+                                    <p id="pwd-form-number-error" class="small-padding-horizontal error hide">get-error-error</p>
+                                </div>
+                                <div>
+                                    <label>
+                                        Minimum special
+                                        <input id="pwd-form-special" type="number" value="1">
+                                    </label>
+                                    <p id="pwd-form-special-error" class="small-padding-horizontal error hide">get-error-error</p>
+                                </div>
+                            </div>
+                            <p id="pwd-form-numbers-error" class="small-padding-horizontal error hide">pwd-form-numbers-error</p>
+                            <div>
+                                <legend>Options</legend>
+                            </div>
+                            <fieldset>
+                                <div class="flex flex-row align-left flex-center mb-s">
+                                    <input id="pwd-form-option-upper" type="checkbox" checked>
+                                    <div>Uppercase letters (A-Z)</div>
+                                </div>
+                                <div class="flex flex-row align-left mb-s">
+                                    <input id="pwd-form-option-lower" type="checkbox" checked>
+                                    <div>Lowercase letters (a-z)</div>
+                                </div>
+                                <div class="flex flex-row align-left mb-s">
+                                    <input id="pwd-form-option-numbers" type="checkbox" checked>
+                                    <div>Numbers (0-9)</div>
+                                </div>
+                                <div class="flex flex-row align-left mb-s">
+                                    <input id="pwd-form-option-special" type="checkbox" checked>
+                                    <div>Special characters (!@#$()[]{}%^&*_-=)</div>
+                                </div>
+                                <hr />
+                                <div class="flex flex-row align-left">
+                                    <input id="pwd-form-option-ambiguous" type="checkbox">
+                                    <div>Avoid ambiguous characters (Il10O)</div>
+                                </div>
+                            </fieldset>
+                        </div>
+                        <p id="pwd-form-error" class="small-padding-horizontal error hide">pwd-form-error</p>
+                        <button class="align-right" id="pwd-send">
+                            Generate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer id="footer">
+            <hr />
+            <p class="info">
+                &copy; 2023 &ndash; Niklas H&Ouml;&Ouml;K
+            </p>
+        </footer>
+    </body>
+</html>
