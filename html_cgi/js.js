@@ -184,7 +184,7 @@ const messageChange = () => {
 }
 
 const goHome = () => {
-    window.location = `${window.location.href.split('?')[0]}`
+    window.location = window.location.pathname;
 }
 
 const copyElementValueToClipboard = (id) => {
@@ -447,8 +447,20 @@ const generatePassword = () => {
     }
 }
 
+const decrypt = () => {
+    const hash = window.location.hash.substring(1);
+    if (hash !== '') {
+        throbber.direction = 'decrypt'
+        showSpinner(true)
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        get(hash);
+    }
+}
+
+let throbber;
+
 window.addEventListener('load', () => {
-    const throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
+    throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
         speedFactor: 0.5
     });
     document.getElementById('send-message').addEventListener('input', () => messageChange());
@@ -462,6 +474,8 @@ window.addEventListener('load', () => {
     document.getElementById('svg-pwd-open').addEventListener('click', () => showPwdGenerator(false));
     document.getElementById('svg-pwd-closed').addEventListener('click', () => showPwdGenerator(true));
     document.getElementById('pwd-copy').addEventListener('click', () => copyElementValueToClipboard('pwd-result'));
+    window.addEventListener('hashchange', decrypt);
+
     ['pwd-form-length', 'pwd-form-number', 'pwd-form-special'].forEach(id => {
         const el = document.getElementById(id);
         el.addEventListener('change', generatePassword);
@@ -476,11 +490,8 @@ window.addEventListener('load', () => {
         'pwd-send'
     ].forEach(id => document.getElementById(id).addEventListener('click', generatePassword));
     document.getElementById('send-result-email-addresses').value = '';
-    const hash = window.location.hash.substring(1);
-    if (hash !== '') {
-        throbber.direction = 'decrypt'
-        showSpinner(true)
-        get(hash);
+    if (window.location.hash.substring(1) !== '') {
+        decrypt()
     } else {
         setView('send');
     };

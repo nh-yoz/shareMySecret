@@ -199,7 +199,7 @@ try:
         print('Accept: application/json')
         if not validate_arguments(arguments, { 'allowed': ('action',), 'required': ('action',) }):
             respond_with_error(405, f"The method '{method}' is not allowed")
-        elif arguments['action'] not in ('encrypt', 'decrypt'):
+        elif arguments['action'][0] not in ('encrypt', 'decrypt'):
             respond_with_error(400, 'Invalid action, must be \'encrypt\' or \'decrypt\'')
         elif cont_type != 'application/json' or cont_len == 0:
             respond_with_error(415, 'Json body required')
@@ -209,12 +209,13 @@ try:
             try:
                 body = sys.stdin.read()
                 data = json.loads(body)
-                if arguments['action'] == 'encrypt' and validate_encrypt_body(data):
+                if arguments['action'][0] == 'encrypt' and validate_encrypt_body(data):
                     store_secret(data)
-                elif arguments['action'] == 'decrypt' and validate_decrypt_body(data):
-                    retrieve_secret(arguments['token'][0])
+                elif arguments['action'][0] == 'decrypt' and validate_decrypt_body(data):
+                    retrieve_secret(data['token'])
             except:
                 respond_with_error(400, 'Invalid json body')
 except:
+    print('')
     print(traceback.format_exc(), file=sys.stderr)
     respond_with_error(500, 'Unknown error')
