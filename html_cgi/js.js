@@ -107,7 +107,7 @@ const send = () => {
             return Promise.reject(res);
         }).then(json => {
             clearTimeout(tOutId);
-            const link = `${window.location.href.split('?')[0]}?${json.token}`
+            const link = `${window.location.href.split('?')[0]}#${json.token}`
             document.getElementById('send-result-link').value = link
             // console.log(json)
             document.getElementById('send-message').value = ''
