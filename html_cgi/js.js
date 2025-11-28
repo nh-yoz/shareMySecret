@@ -88,7 +88,7 @@ const send = () => {
     showSpinner(true);
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 8000)
-    const url = 'sharesecret.cgi';
+    const url = 'sharesecret.cgi?action=encrypt';
     const headers = {
         "Content-Type": "application/json",
         "Origin": window.location.hostname,
@@ -133,9 +133,16 @@ const send = () => {
 const get = (token) => {
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 8000)
-    const url = `sharesecret.cgi?token=${token}`;
+    const url = 'sharesecret.cgi?action=decrypt';
+    const headers = {
+        "Content-Type": "application/json",
+        "Origin": window.location.hostname,
+        "X-Requested-With": window.location.hostname
+    }
     fetch(url, {
-            method: "GET",
+            method: "POST",
+            headers,
+            body: JSON.stringify( { token }),
             signal: controller.signal
         })
         .then(res => {
@@ -469,11 +476,11 @@ window.addEventListener('load', () => {
         'pwd-send'
     ].forEach(id => document.getElementById(id).addEventListener('click', generatePassword));
     document.getElementById('send-result-email-addresses').value = '';
-    const searchString = window.location.search;
-    if (searchString !== '') {
+    const hash = window.location.hash.substring(1);
+    if (hash !== '') {
         throbber.direction = 'decrypt'
         showSpinner(true)
-        get(searchString.slice(1));
+        get(hash);
     } else {
         setView('send');
     };
