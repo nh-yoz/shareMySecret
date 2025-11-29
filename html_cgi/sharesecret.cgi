@@ -6,10 +6,10 @@ import config
 
 msg_sent = False
 
-def encrypt(message: string, key: string) -> string:
+def encrypt(message: str, key: str) -> str:
     return Fernet(key).encrypt(message.encode()).decode()
 
-def decrypt(message: string, key: string) -> string:
+def decrypt(message: str, key: str) -> str:
     return Fernet(key.encode()).decrypt(message.encode()).decode()
 
 
