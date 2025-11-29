@@ -5,7 +5,7 @@ class CryptThrobber {
     #running = false;
 
     #nbChars = 0;
-    
+
     #digits = ['0', '1'];
     #chars = (() => {
         const arr = [];
@@ -49,7 +49,7 @@ class CryptThrobber {
 
         this.#wrapper = createChildDivs(containerElement, `crypt-throbbler-wrapper-${idIdx}`);
         [this.#textElement, this.#hotspot] = createChildDivs(this.#wrapper, [`crypt-throbbler-text-${idIdx}`, `crypt-throbbler-hotspot-${idIdx}`]);
-        
+
         [this.#wrapper, this.#textElement, this.#hotspot].forEach(element => {
             element.style.padding = 0;
             element.style.margin = 0;
@@ -99,7 +99,7 @@ class CryptThrobber {
             this.#running = false;
         }
     }
-    
+
     #evtHotspot1 = () => {
         this.#hotspot.style.opacity = 1;
         const text = this.#textElement.textContent;
@@ -110,14 +110,14 @@ class CryptThrobber {
         }
         setTimeout(() => this.#hotspot.animate([{ opacity: 0 }], { duration: 200 * this.#options.speedFactor, iterations: 1 }).onfinish = this.#evtHotspot2, 100);
     }
-    
+
     #evtHotspot2 = () => {
         this.#hotspot.style.opacity=0;
         setTimeout(() => {
             this.#textElement.animate([{ left: this.#options.direction === 'crypt' ? '0ch' : '-3ch' }], { duration: 100 * this.#options.speedFactor, iterations: 1 }).onfinish = this.#evtText;
         }, 100);
     }
-    
+
     #evtText = () => {
         const text = this.#textElement.textContent;
         if (this.#options.direction === 'crypt') {
@@ -131,7 +131,7 @@ class CryptThrobber {
     get length() {
         return this.#nbChars * 2 - 1;
     }
-    
+
     set length(newValue) {
         if (newValue < 1) {
             console.error('Invalid length: must be >= 1');
@@ -162,13 +162,13 @@ class CryptThrobber {
     get direction () {
         return this.#options.direction
     }
-   
+
     set direction (operation) {
         if (['crypt', 'decrypt'].includes(operation)) {
             if (operation !== this.#options.direction) {
                 this.#changeDirection = true;
                 if (!this.#running) {
-                    animate();
+                    this.#animate();
                 };
             }
         } else {

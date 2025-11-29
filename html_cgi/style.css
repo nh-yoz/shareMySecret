@@ -28,7 +28,7 @@ body {
 
 h1 {
     padding: 0;
-    margin: 0; 
+    margin: 0;
     font-size: 2rem;
 }
 
@@ -269,7 +269,7 @@ fieldset hr {
     text-align: left;
     margin-left: 0px;
 }
-    
+
 
 #pwd-result {
     max-width: 100%;
@@ -321,7 +321,7 @@ fieldset hr {
         transform: rotate(360deg);
     }
 }
-  
+
 @keyframes dash {
     0% {
         stroke-dasharray: 1, 150;
@@ -336,4 +336,4 @@ fieldset hr {
         stroke-dashoffset: -124;
     }
 }
-          
+

@@ -207,9 +207,11 @@ const copyElementValueToClipboard = (id) => {
 const showSpinner = (visible) => {
     const spinnerClassList = document.getElementById('throbber-container').classList;
     if (visible) {
-        spinnerClassList.remove('no-show')
+        spinnerClassList.remove('no-show');
+        throbber.isRunning = true;
     } else {
         spinnerClassList.add("no-show");
+        throbber.isRunning = false;
     }
 }
 
