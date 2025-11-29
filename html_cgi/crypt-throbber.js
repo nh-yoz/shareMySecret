@@ -10,9 +10,9 @@ class CryptThrobber {
     #chars = (() => {
         const arr = [];
         for (let i = 65; i < 91 ; i++) {
-            const char = String.fromCharCode(i)
-            arr.push(char)
-            arr.push(char.toLowerCase())
+            const char = String.fromCharCode(i);
+            arr.push(char);
+            arr.push(char.toLowerCase());
         }
         return arr;
     })()
@@ -25,7 +25,7 @@ class CryptThrobber {
         direction: 'crypt', // 'crypt' || 'decrypt'
         speedFactor: 1,
         runAnimation: true,
-    }
+    };
 
     constructor (containerElement, length, hotspotColor, options = this.#options) {
         if (options) {
@@ -104,9 +104,9 @@ class CryptThrobber {
         this.#hotspot.style.opacity = 1;
         const text = this.#textElement.textContent;
         if (this.#options.direction === 'crypt') {
-            this.#textElement.innerHTML = text.slice(0, this.#nbChars) + this.#getRandomChars(this.#digits, 1) + text.slice(this.#nbChars + 1)
+            this.#textElement.innerHTML = text.slice(0, this.#nbChars) + this.#getRandomChars(this.#digits, 1) + text.slice(this.#nbChars + 1);
         } else {
-            this.#textElement.innerHTML = text.slice(0, this.#nbChars + 1) + this.#getRandomChars(this.#chars, 1) + text.slice(this.#nbChars + 2)
+            this.#textElement.innerHTML = text.slice(0, this.#nbChars + 1) + this.#getRandomChars(this.#chars, 1) + text.slice(this.#nbChars + 2);
         }
         setTimeout(() => this.#hotspot.animate([{ opacity: 0 }], { duration: 200 * this.#options.speedFactor, iterations: 1 }).onfinish = this.#evtHotspot2, 100);
     }
@@ -151,7 +151,7 @@ class CryptThrobber {
                     newText = this.#getRandomChars(this.#chars, nbCharsDiff / 2) + oldText + this.#getRandomChars(this.#digits, nbCharsDiff / 2);
                 } else if (nbCharsDiff < 0) {
                     // remove characters
-                    newText = oldText.slice(-nbCharsDiff / 2, oldText.length + nbCharsDiff + 1)
+                    newText = oldText.slice(-nbCharsDiff / 2, oldText.length + nbCharsDiff + 1);
                 }
             }
             this.#textElement.innerHTML = newText;
@@ -160,7 +160,7 @@ class CryptThrobber {
     }
 
     get direction () {
-        return this.#options.direction
+        return this.#options.direction;
     }
 
     set direction (operation) {

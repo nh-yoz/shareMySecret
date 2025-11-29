@@ -11,7 +11,7 @@ const setView = (id) => {
     Object.entries(allViewsId).forEach(([key, value]) => {
         const elClassList = document.getElementById(key).classList;
         value ? elClassList.remove('no-show') : elClassList.add('no-show');
-    })
+    });
 }
 
 const setErrors = (errors) => {
@@ -28,13 +28,13 @@ const setErrors = (errors) => {
         'pwd-form-numbers-error': '',
         'pwd-form-error': '',
         ...errors
-    }
+    };
     Object.entries(allErrorsId).forEach(([key, value]) => {
         const el = document.getElementById(key);
         const elClassList = el.classList;
         el.innerHTML = value || '&nbsp;';
         ['&nbsp;', ''].includes(value) ? elClassList.add('hide') : elClassList.remove('hide');
-    })
+    });
 }
 
 const getJson = (parse = false) => {
@@ -43,7 +43,7 @@ const getJson = (parse = false) => {
         max_views: document.getElementById('send-limit-views').value,
         expires_in_value: document.getElementById('send-expires-value').value,
         expires_in_unit: document.getElementById('send-expires-unit').value
-    }
+    };
     if (parse) {
         obj.max_views = parseInt(obj.max_views, 10);
         obj.expires_in_value = parseInt(obj.expires_in_value, 10);
@@ -59,7 +59,6 @@ const validateForm = () => {
     } else if (obj.secret_message.length > 2000) {
         errors['send-message-error'] = "Too many characters (max 2000)";
     }
-
     if (!/^[0-9]+$/.test(obj.max_views)) {
         errors['send-limit-views-error'] = "Must be an integer >= 0";
     }
@@ -69,7 +68,7 @@ const validateForm = () => {
             'd': 30,
             'h': 30 * 24,
             'm': 30 * 24 * 60
-        }
+        };
         if (val > testObj[obj.expires_in_unit]) {
             errors['send-expires-error'] = "Must at most be 30 days";
         }
@@ -84,7 +83,7 @@ const send = () => {
     if (!validateForm()) {
         return;
     }
-    throbber.direction = 'crypt'
+    throbber.direction = 'crypt';
     showSpinner(true);
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 8000)
@@ -93,7 +92,7 @@ const send = () => {
         "Content-Type": "application/json",
         "Origin": window.location.hostname,
         "X-Requested-With": window.location.hostname
-    }
+    };
     fetch(url, {
             method: "POST",
             headers,
@@ -107,10 +106,10 @@ const send = () => {
             return Promise.reject(res);
         }).then(json => {
             clearTimeout(tOutId);
-            const link = `${window.location.href.split('?')[0]}#${json.token}`
-            document.getElementById('send-result-link').value = link
+            const link = `${window.location.href.split('?')[0]}#${json.token}`;
+            document.getElementById('send-result-link').value = link;
             // console.log(json)
-            document.getElementById('send-message').value = ''
+            document.getElementById('send-message').value = '';
             setView('send-result');
             showSpinner(false);
         })
@@ -132,13 +131,13 @@ const send = () => {
 
 const get = (token) => {
     const controller = new AbortController();
-    const tOutId = setTimeout(() => controller.abort(), 8000)
+    const tOutId = setTimeout(() => controller.abort(), 8000);
     const url = 'sharesecret.cgi?action=decrypt';
     const headers = {
         "Content-Type": "application/json",
         "Origin": window.location.hostname,
         "X-Requested-With": window.location.hostname
-    }
+    };
     fetch(url, {
             method: "POST",
             headers,
@@ -166,9 +165,9 @@ const get = (token) => {
                 error = 'Your token is invalid or the message has expired.';
             } else {
                 if (err.name && err.name === 'AbortError') {
-                    error = 'The server took too long to respond. Try again later.'
+                    error = 'The server took too long to respond. Try again later.';
                 } else {
-                    error = 'The server encountered an error while treating the request. Try again later.'
+                    error = 'The server encountered an error while treating the request. Try again later.';
                 }
             }
             setErrors({
@@ -189,9 +188,9 @@ const goHome = () => {
 
 const copyElementValueToClipboard = (id) => {
     const element = document.getElementById(id);
-    let text = element.value
+    let text = element.value;
     if (text === undefined) {
-        text = element.textContent
+        text = element.textContent;
     }
     navigator.clipboard.writeText(text);
     const old = window.getComputedStyle(element, null).getPropertyValue('background-color');
@@ -201,7 +200,7 @@ const copyElementValueToClipboard = (id) => {
         backgroundColor: old
     }], {
         duration: 200
-    })
+    });
 }
 
 const showSpinner = (visible) => {
@@ -245,7 +244,7 @@ const sendEmail = () => {
 	    "Content-Type": "application/json",
 	    "Origin": window.location.hostname,
 	    "X-Requested-With": window.location.hostname
-        }
+        };
         const body = {
             to: emails,
             subject,
@@ -293,9 +292,9 @@ const sendEmail = () => {
             .catch(err => {
                 let error = '';
                 if (err.name && err.name === 'AbortError') {
-                    error = 'The server took too long to respond. Try again later.'
+                    error = 'The server took too long to respond. Try again later.';
                 } else {
-                    error = 'The server encountered an error. Try again later.'
+                    error = 'The server encountered an error. Try again later.';
                 }
                 resultElement.innerHTML = error;
                 resultElement.classList.add('error');
@@ -406,7 +405,7 @@ const getPassword = (length, upper, lower, number, special, ignoreAmbigious) => 
         { name: 'lower', chars: 'abcdefghijklmnopqrstuvwxyz', min: lower, count: 0, class:'' },
         { name: 'number', chars: '0123456789', min: number, count: 0, class: 'pwd-number' },
         { name: 'special', chars: '!@#$()[]{}%^&*_-=', min: special, count: 0, class: 'pwd-special' },
-    ]
+    ];
     if (ignoreAmbigious) {
         charSet.forEach(obj => obj.chars = obj.chars.replace(/[|Il10O]/g, ''));
     }
@@ -436,7 +435,7 @@ const generatePassword = () => {
     const retVal = validatePwdForm();
     if (!retVal) {
         document.getElementById('pwd-result').innerHTML = '&nbsp;';
-        document.getElementById('pwd-strength').innerHTML = ''
+        document.getElementById('pwd-strength').innerHTML = '';
     } else {
         pwdObj = getPassword(retVal.length, retVal.upper, retVal.lower, retVal.number, retVal.special, retVal.ignoreAmbigious);
         document.getElementById('pwd-result').innerHTML = pwdObj.html;
@@ -452,8 +451,8 @@ const generatePassword = () => {
 const decrypt = () => {
     const hash = window.location.hash.substring(1);
     if (hash !== '') {
-        throbber.direction = 'decrypt'
-        showSpinner(true)
+        throbber.direction = 'decrypt';
+        showSpinner(true);
         history.replaceState(null, "", window.location.pathname + window.location.search);
         get(hash);
     }
