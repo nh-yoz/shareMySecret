@@ -72,8 +72,8 @@ def validate_encrypt_body(data: dict):
                 raise Exception('file.data: should be base64 encoded')
 
         return True
-    except Exception as error:
-        respond_with_error(400, error)
+    except Exception as err:
+        respond_with_error(400, err)
         return False
 
 
@@ -88,8 +88,8 @@ def validate_decrypt_body(data: dict):
         if not validate_token(data['token']):
             raise Exception('Invalid value for \'token\'')
         return True
-    except Exception as error:
-        respond_with_error(400, error)
+    except Exception as err:
+        respond_with_error(400, err)
         return False
 
 def store_secret(data: dict):
@@ -109,19 +109,20 @@ def store_secret(data: dict):
         }
         # 'views' must be first key in file so it can be changed after each retrieval
         data = { 'views': 0, 'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1], **data }
+        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data["expires_in_value"]} {time_multiplyers[data["expires_in_unit"]][0]}'
         del data['expires_in_value']
         del data['expires_in_unit']
         f = open(fname, 'w')
         yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
         f.close()
-        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data["expires_in_value"]} {time_multiplyers[data["expires_in_unit"]][0]}'
         subprocess.run(["/bin/bash", "-c", at_command])
         print('Status: 201 Created')
         print('')
         resdict = { 'token': file_name + key[:-1] }
         print(json.JSONEncoder().encode(resdict))
         msg_sent = True
-    except:
+    except Exception as err:
+        print(traceback.format_exc(), file=sys.stderr)
         respond_with_error(500, 'The secret message could not be saved')
 
 def validate_token(token: str) -> bool:
@@ -147,35 +148,42 @@ def validate_arguments(given_args, valid_args):
 
 def retrieve_secret(token: str):
     global msg_sent
-    fname = 'secret/' + token[0:10]
-    if not os.path.exists(fname):
-        respond_with_error(404, 'Secret message doesn\'t exist')
-    key = token[10:] + '='
-    f = open(fname, 'r')
-    data = yaml.safe_load(f.read())
-    f.close()
-    # check validity limit
-    if time.time() > data['expires']:
-        os.remove(fname)
-        respond_with_error(410, 'The secret message has expired')
-        return
-    data['views'] += 1
     try:
-        data['message'] = decrypt(data['message'], key)
-        if data['file'] is not None:
-            data['file']['data'] = decrypt(data['message']['data'], key)
-    except:
-        respond_with_error(400, 'Invalid token')
-        return
-    if data['views'] >= data['max_views'] and data['max_views'] != 0:
-        os.remove(fname)
-    else:
-        # Change the number of views : it is the first line in yaml-file
-        subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]+/{data["views"]}/'])
-    print('Status: 200 OK')
-    print('')
-    print(json.JSONEncoder().encode(data))
-    msg_sent = True
+        fname = 'secret/' + token[0:10]
+        if not os.path.exists(fname):
+            respond_with_error(404, 'Secret message doesn\'t exist')
+        key = token[10:] + '='
+        f = open(fname, 'r')
+        data = yaml.safe_load(f.read())
+        f.close()
+        # check validity limit
+        if time.time() > data['expires']:
+            os.remove(fname)
+            respond_with_error(410, 'The secret message has expired')
+            return
+        data['views'] += 1
+        try:
+            data['message'] = decrypt(data['message'], key)
+            if data['file'] is not None:
+                data['file']['data'] = decrypt(data['file']['data'], key)
+        except Exception as err:
+            print(traceback.format_exc(), file=sys.stderr)
+            respond_with_error(400, 'Invalid token')
+            return
+        if data['views'] >= data['max_views'] and data['max_views'] != 0:
+            os.remove(fname)
+        else:
+            # Change the number of views : it is the first line in yaml-file
+            subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
+        print('Status: 200 OK')
+        print('')
+        print(json.JSONEncoder().encode(data))
+        msg_sent = True
+    except Exception as err:
+        print(traceback.format_exc(), file=sys.stderr)
+        respond_with_error(500, 'Unknown error')
+
+
 
 def respond_with_error(status: int, message: str):
     global msg_sent
@@ -236,7 +244,6 @@ try:
                     retrieve_secret(data['token'])
             except:
                 respond_with_error(400, 'Invalid json body')
-except:
-    print('')
+except Exception as err:
     print(traceback.format_exc(), file=sys.stderr)
     respond_with_error(500, 'Unknown error')
