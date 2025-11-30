@@ -167,7 +167,6 @@ def retrieve_secret(token: str):
             if data['file'] is not None:
                 data['file']['data'] = decrypt(data['file']['data'], key)
         except Exception as err:
-            print(traceback.format_exc(), file=sys.stderr)
             respond_with_error(400, 'Invalid token')
             return
         if data['views'] >= data['max_views'] and data['max_views'] != 0:

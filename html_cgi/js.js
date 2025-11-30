@@ -60,6 +60,12 @@ const isFileOk = () => {
     return file.size <= maxSize;
 }
 
+const getHumanSize = (sizeBytes) => {
+    if (sizeBytes <= 0) return '0 B';
+    return [ 'B', 'kB', 'MB', 'GB' ].map((unit, i) => [ Math.round(10 * sizeBytes / (1024 ** i)) / 10, unit ])
+        .filter(item => item[0] > 0.99).reverse()[0].join('&nbsp;');
+}
+
 const fileChange = () => {
     const file = document.getElementById('send-file').files[0];
     const [ filenameEl, fileErrEl ] = ['send-file-filename', 'send-file-error'].map(id => document.getElementById(id));
@@ -67,11 +73,6 @@ const fileChange = () => {
     if (!file) {
         filenameEl.textContent = "No file selected";
         return;
-    }
-    const getHumanSize = (sizeBytes) => {
-        if (sizeBytes <= 0) return '0 B';
-        return [ 'B', 'kB', 'MB', 'GB' ].map((unit, i) => [ Math.round(10 * sizeBytes / (1024 ** i)) / 10, unit ])
-            .filter(item => item[0] > 0.99).reverse()[0].join('&nbsp;');
     }
     filenameEl.innerHTML = `${file.name} (${getHumanSize(file.size)})` 
     if (file.size > maxSize) {
@@ -237,6 +238,17 @@ const get = (token) => {
             document.getElementById('get-result-message').value = base64ToUtf8(json.message);
             document.getElementById('get-result-views').innerHTML = `Views: ${json.views}${json.max_views === 0 ? '' : ` / ${json.max_views}`}`;
             document.getElementById('get-result-expires').innerHTML = `Expires: ${expires.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })} ${expires.toLocaleTimeString('en-GB')}`;
+            const resFileEl = document.getElementById('get-result-file');
+            if (json.file) {
+                const [ linkEl, fileSizeEl ] = ['get-result-file-link', 'get-result-file-size'].map(id => resFileEl.getElementById(id));
+                linkEl.href = "data:application/octet-stream;base64," + json.file.data;
+                linkEl.download = json.file.name;
+                linkEl.textContent = json.file.name;
+                fileSizeEl.textContent = `(${getHumanSize(json.file.size)})`
+                resFileEl.classList.remove('no-show');
+            } else {
+                resFileEl.classList.add('no-show');
+            }
             setView('get-result');
             showSpinner(false);
         })
