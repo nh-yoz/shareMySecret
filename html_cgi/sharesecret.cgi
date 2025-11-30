@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-import os, cgi, sys, json, random, string, datetime, traceback
+import re
+import os, cgi, sys, json, random, string, datetime, traceback, time, subprocess, yaml
 from cryptography.fernet import Fernet
 import config
 
@@ -15,18 +16,12 @@ def decrypt(message: str, key: str) -> str:
 
 def validate_encrypt_body(data: dict):
     try:
-        keys = ['secret_message', 'max_views', 'expires_in_value', 'expires_in_unit']
+        keys = ['message', 'file', 'max_views', 'expires_in_value', 'expires_in_unit']
         # Check if all keys are available
         if any((missing_key:=key) not in data for key in keys):
             raise Exception(f'Missing key: \'{missing_key}\'')
         if any((invalid_key:=key) not in keys for key in data):
             raise Exception(f'Invalid key: \'{invalid_key}\'')
-
-        # Check if message is ok (string and length > 0)
-        if type(data['secret_message']) is not str:
-            raise Exception('secret_message: must be a string')
-        if len(data['secret_message']) == 0:
-            raise Exception('secret_message: should not be empty')
 
         # Check if limit_views is integer and >= 0
         if type(data['max_views']) is not int:
@@ -40,11 +35,42 @@ def validate_encrypt_body(data: dict):
         if data['expires_in_value'] <= 0:
             raise Exception('expires_in_value: must be greater than 0')
 
-        # Check expires_in_unit is 'd', 'y' or 'm'
+        # Check expires_in_unit is 'd', 'h' or 'm'
         if type(data['expires_in_unit']) is not str:
             raise Exception('expires_in_unit: must be a string')
         if data['expires_in_unit'] not in ['d', 'h', 'm']:
             raise Exception('expires_in_unit: should be one of "d", "h", "m"')
+
+        # Check if message is ok (string and length > 0)
+        if type(data['message']) is not str:
+            raise Exception('message: must be a string')
+        if len(data['message']) == 0:
+            raise Exception('message: should not be empty')
+        if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', data['message']):
+            raise Exception('message: should be base64 encoded')
+
+        # Check if file is ok
+        d = data['file'] 
+        if d is not None and not isinstance(d, dict):
+            raise Exception('file: must be null or an object')
+        if d is not None:
+            keys = ['name', 'size', 'data']
+            # Check if all keys are available and no extra keys
+            if any((missing_key:=key) not in d for key in keys):
+                raise Exception(f'Missing key in \'file\': \'{missing_key}\'')
+            if any((invalid_key:=key) not in keys for key in d):
+                raise Exception(f'Invalid key in \'file\': \'{invalid_key}\'')
+            # Check types of file
+            for t in [ ('name', str, 'a string'), ('size', int, 'an integer'), ('data', str, 'a string') ]:
+                if type(d[t[0]]) is not t[1]:
+                    raise Exception(f'file.{t[0]}: must be {t[2]}')
+            if d['size'] < 1:
+                raise Exception(f'file.size must be > 0')
+            if len(d['data']) == 0:
+                raise Exception('file.data: should not be empty')
+            if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', d['data']):
+                raise Exception('file.data: should be base64 encoded')
+
         return True
     except Exception as error:
         respond_with_error(400, error)
@@ -69,34 +95,30 @@ def validate_decrypt_body(data: dict):
 def store_secret(data: dict):
     global msg_sent
     try:
-        secret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
+        file_name = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
         key = Fernet.generate_key().decode()
-        encrypted = encrypt(data['secret_message'], key)
-        fname = 'secret/' + secret
+        data['message'] = encrypt(data['message'], key)
+        if data['file'] is not None:
+            data['file']['data'] = encrypt(data['file']['data'], key)
+        fname = 'secret/' + file_name
         # Define expiration date
-        expires = datetime.datetime.now()
-        at_command = 'echo "rm -f ' + os.getcwd() + '/' + fname + '" | at now + ' + str(data['expires_in_value'])
-        if data['expires_in_unit'] == 'd':
-            expires = expires + datetime.timedelta(days = data['expires_in_value'])
-            at_command += ' days'
-        elif data['expires_in_unit'] == 'h':
-            expires = expires + datetime.timedelta(hours = data['expires_in_value'])
-            at_command += ' hours'
-        else: # 'm'
-            expires = expires + datetime.timedelta(minutes = data['expires_in_value'])
-            at_command += ' minutes'
-        data_store = {
-            'views': 0,
-            'max_views': data['max_views'],
-            'expires': expires.isoformat(),
-            'secret_message': encrypted
+        time_multiplyers = {
+            'm': ('minutes', 60),
+            'h': ('hours', 60 * 60),
+            'd': ('days', 24 * 60 * 60)
         }
+        # 'views' must be first key in file so it can be changed after each retrieval
+        data = { 'views': 0, 'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1], **data }
+        del data['expires_in_value']
+        del data['expires_in_unit']
         f = open(fname, 'w')
-        json.dump(data_store, f)
+        yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
         f.close()
+        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data['expires_in_value']} {time_multiplyers[data['expires_in_unit']][0]}'
+        subprocess.run(["/bin/bash", "-c", at_command])
         print('Status: 201 Created')
         print('')
-        resdict = { 'status': 201, 'token': secret + key[:-1] }
+        resdict = { 'token': file_name + key[:-1] }
         print(json.JSONEncoder().encode(resdict))
         msg_sent = True
     except:
@@ -127,33 +149,32 @@ def retrieve_secret(token: str):
     global msg_sent
     fname = 'secret/' + token[0:10]
     if not os.path.exists(fname):
-        respond_with_error(404, 'Secret message doesn\'t exists')
+        respond_with_error(404, 'Secret message doesn\'t exist')
     key = token[10:] + '='
     f = open(fname, 'r')
-    data = f.read()
-    data = json.loads(data)
+    data = yaml.safe_load(f.read())
     f.close()
     # check validity limit
-    date_limit = datetime.datetime.fromisoformat(data['expires'])
-    now = datetime.datetime.now()
-    if now > date_limit:
+    if time.time() > data['expires']:
         os.remove(fname)
         respond_with_error(410, 'The secret message has expired')
+        return
     data['views'] += 1
     try:
-        message = decrypt(data['secret_message'], key)
+        data['message'] = decrypt(data['message'], key)
+        if data['file'] is not None:
+            data['file']['data'] = decrypt(data['message']['data'], key)
     except:
         respond_with_error(400, 'Invalid token')
+        return
     if data['views'] >= data['max_views'] and data['max_views'] != 0:
         os.remove(fname)
     else:
-        f = open(fname, 'w')
-        json.dump(data, f)
-        f.close
+        # Change the number of views : it is the first line in yaml-file
+        subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]+/{data['views']}/'])
     print('Status: 200 OK')
     print('')
-    resdict = { 'status': 200, 'message': str(message), 'expires_at': date_limit.isoformat(), 'views': data['views'], 'max_views': data['max_views'] }
-    print(json.JSONEncoder().encode(resdict))
+    print(json.JSONEncoder().encode(data))
     msg_sent = True
 
 def respond_with_error(status: int, message: str):

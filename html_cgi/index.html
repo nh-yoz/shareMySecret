@@ -23,7 +23,7 @@
         <div id="container">
             <div id="main">
                 <h1 class="align-left">Share my secret</h1>
-                <p class="info align-left">128-bit encryption, keys not stored, no cache, no tracking</p><br>
+                <p class="info align-left">128-bit AES encryption, keys not stored, no cache, no tracking</p><br>
                 <noscript>Javascript is required. Please activate it.</noscript>
                 <div class="flex flex-col no-show" id="send">
                     <div>
@@ -36,8 +36,22 @@
                             <p class="info align-right" id="send-message-char">0/2000</p>
                         </div>
                     </div>
+                    <div>
+                        <legend class="label">Want to send a file?
+                        </legend>
+                        <div class="flex flex-row">
+                            <label for="send-file" id="send-file-button">
+                                Choose a file...
+                            </label>
+                            <div>
+                                <p class="error" id="send-file-error">&nbsp;</p>
+                                <p class="info" id="send-file-filename">No file selected</p>
+                            </div>
+                            <input type="file" id="send-file" accept="*" max="10485760">
+                            </div>
+                    </div>
                     <div class="flex flex-row justify">
-                        <div >
+                        <div>
                             <label>
                                 Max number of views*
                                 <input type="number" name="send-limit-views" id="send-limit-views" value="0"/>

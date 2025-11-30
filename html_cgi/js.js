@@ -39,7 +39,7 @@ const setErrors = (errors) => {
 
 const getJson = (parse = false) => {
     const obj = {
-        secret_message: document.getElementById('send-message').value,
+        message: document.getElementById('send-message').value,
         max_views: document.getElementById('send-limit-views').value,
         expires_in_value: document.getElementById('send-expires-value').value,
         expires_in_unit: document.getElementById('send-expires-unit').value
@@ -51,12 +51,42 @@ const getJson = (parse = false) => {
     return obj;
 }
 
+const isFileOk = () => {
+    const maxSize = 10 * 1024 * 1024; // 10 MB in bytes
+    const file = document.getElementById('send-file').files[0];
+    if (!file) {
+        return true;
+    }
+    return file.size <= maxSize;
+}
+
+const fileChange = () => {
+    const file = document.getElementById('send-file').files[0];
+    const [ filenameEl, fileErrEl ] = ['send-file-filename', 'send-file-error'].map(id => document.getElementById(id));
+    const maxSize = 10 * 1024 * 1024; // 10 MB in bytes
+    if (!file) {
+        filenameEl.textContent = "No file selected";
+        return;
+    }
+    const getHumanSize = (sizeBytes) => {
+        if (sizeBytes <= 0) return '0 B';
+        return [ 'B', 'kB', 'MB', 'GB' ].map((unit, i) => [ Math.round(10 * sizeBytes / (1024 ** i)) / 10, unit ])
+            .filter(item => item[0] > 0.99).reverse()[0].join('&nbsp;');
+    }
+    filenameEl.innerHTML = `${file.name} (${getHumanSize(file.size)})` 
+    if (file.size > maxSize) {
+        fileErrEl.textContent = "File exceeds 10 MB limit!";
+    } else {
+        fileErrEl.innerHTML = "&nbsp;";
+    }
+}
+
 const validateForm = () => {
     const obj = getJson();
     const errors = {};
-    if (obj.secret_message.length === 0) {
+    if (obj.message.length === 0) {
         errors['send-message-error'] = "May not be empty";
-    } else if (obj.secret_message.length > 2000) {
+    } else if (obj.message.length > 2000) {
         errors['send-message-error'] = "Too many characters (max 2000)";
     }
     if (!/^[0-9]+$/.test(obj.max_views)) {
@@ -76,11 +106,61 @@ const validateForm = () => {
         errors['send-expires-error'] = "Must be a positive integer";
     }
     setErrors(errors);
-    return Object.keys(errors).length === 0;
+    console.log(isFileOk());
+    return Object.keys(errors).length === 0 && isFileOk();
 }
 
-const send = () => {
+const getJsonWithFile = async () => {
+    const json = getJson(true);
+    json['file'] = null;
+    const file = document.getElementById('send-file').files[0];
+    if (file) {
+        const reader = new FileReader();
+        let resolveFunc, rejectFunc;
+        const retPromise = new Promise((resolve, reject) => {
+            resolveFunc = resolve;
+            rejectFunc = reject;
+        });
+        reader.onload = async ()  => {
+            const base64Data = reader.result.split(',')[1]; // remove data: header
+            json['file'] = {
+                name: file.name,
+                size: file.size,
+                data: base64Data
+            };
+            resolveFunc(json);
+        }
+        reader.readAsDataURL(file);
+        return retPromise;
+    } else {
+        return new Promise(resolve => resolve(json));
+    }
+}
+
+// Function to encode a UTF-8 string to Base64
+function utf8ToBase64(str) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const binaryString = String.fromCharCode.apply(null, data);
+    return btoa(binaryString);
+}
+
+// Function to decode a Base64 string to UTF-8
+function base64ToUtf8(b64) {
+    const binaryString = atob(b64);
+    // Create a Uint8Array from the binary string.
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    const decoder = new TextDecoder();
+    return decoder.decode(bytes);
+}
+
+const send = async () => {
+    console.log('send');
     if (!validateForm()) {
+        console.log('not validated');
         return;
     }
     throbber.direction = 'crypt';
@@ -93,10 +173,12 @@ const send = () => {
         "Origin": window.location.hostname,
         "X-Requested-With": window.location.hostname
     };
+    const json = await getJsonWithFile()
+    json.message = utf8ToBase64(json.message);
     fetch(url, {
             method: "POST",
             headers,
-            body: JSON.stringify(getJson(true)),
+            body: JSON.stringify(json),
             signal: controller.signal
         })
         .then(res => {
@@ -151,8 +233,8 @@ const get = (token) => {
             return Promise.reject(res);
         }).then(json => {
             clearTimeout(tOutId);
-            expires = new Date(json.expires_at);
-            document.getElementById('get-result-message').value = json.message;
+            expires = new Date(json.expires * 1000);
+            document.getElementById('get-result-message').value = base64ToUtf8(json.message);
             document.getElementById('get-result-views').innerHTML = `Views: ${json.views}${json.max_views === 0 ? '' : ` / ${json.max_views}`}`;
             document.getElementById('get-result-expires').innerHTML = `Expires: ${expires.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })} ${expires.toLocaleTimeString('en-GB')}`;
             setView('get-result');
@@ -465,6 +547,7 @@ window.addEventListener('load', () => {
         speedFactor: 0.5
     });
     document.getElementById('send-message').addEventListener('input', () => messageChange());
+    document.getElementById('send-file').addEventListener('change', fileChange);
     document.getElementById('send-send').addEventListener('click', () => send());
     document.getElementById('send-result-copy').addEventListener('click', () => copyElementValueToClipboard('send-result-link'));
     document.getElementById('send-result-email').addEventListener('click', sendEmail);
