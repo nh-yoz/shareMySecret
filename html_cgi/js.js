@@ -169,6 +169,7 @@ const send = async () => {
     throbber.direction = 'crypt';
     showSpinner(true);
     const controller = new AbortController();
+    const json = await getJsonWithFile()
     const tOutId = setTimeout(() => controller.abort(), 10000 + json.file ? json.file.size / 1024 : 0);
     const url = 'sharesecret.cgi?action=encrypt';
     const headers = {
@@ -176,7 +177,6 @@ const send = async () => {
         "Origin": window.location.hostname,
         "X-Requested-With": window.location.hostname
     };
-    const json = await getJsonWithFile()
     json.message = utf8ToBase64(json.message);
     fetch(url, {
             method: "POST",
