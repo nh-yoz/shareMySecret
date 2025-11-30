@@ -239,15 +239,19 @@ const get = (token) => {
             document.getElementById('get-result-views').innerHTML = `Views: ${json.views}${json.max_views === 0 ? '' : ` / ${json.max_views}`}`;
             document.getElementById('get-result-expires').innerHTML = `Expires: ${expires.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })} ${expires.toLocaleTimeString('en-GB')}`;
             const resFileEl = document.getElementById('get-result-file');
-            if (json.file) {
-                const [ linkEl, fileSizeEl ] = ['get-result-file-link', 'get-result-file-size'].map(id => resFileEl.getElementById(id));
-                linkEl.href = "data:application/octet-stream;base64," + json.file.data;
-                linkEl.download = json.file.name;
-                linkEl.textContent = json.file.name;
-                fileSizeEl.textContent = `(${getHumanSize(json.file.size)})`
-                resFileEl.classList.remove('no-show');
-            } else {
-                resFileEl.classList.add('no-show');
+            try {
+                if (json.file) {
+                    const [ linkEl, fileSizeEl ] = ['get-result-file-link', 'get-result-file-size'].map(id => resFileEl.getElementById(id));
+                    linkEl.href = "data:application/octet-stream;base64," + json.file.data;
+                    linkEl.download = json.file.name;
+                    linkEl.textContent = json.file.name;
+                    fileSizeEl.textContent = `(${getHumanSize(json.file.size)})`
+                    resFileEl.classList.remove('no-show');
+                } else {
+                    resFileEl.classList.add('no-show');
+                }
+            } catch (e) {
+                console.log(e);
             }
             setView('get-result');
             showSpinner(false);
