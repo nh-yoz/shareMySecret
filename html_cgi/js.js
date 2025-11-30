@@ -1,3 +1,6 @@
+let throbber;
+const maxFileSize = 5 * 1024 * 1024 // 5 Mb
+
 const setView = (id) => {
     const allViewsId = {
         'get-result': false,
@@ -52,7 +55,7 @@ const getJson = (parse = false) => {
 }
 
 const isFileOk = () => {
-    const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
+    const maxSize = maxFileSize; // 5 MB in bytes
     const file = document.getElementById('send-file').files[0];
     if (!file) {
         return true;
@@ -69,7 +72,7 @@ const getHumanSize = (sizeBytes) => {
 const fileChange = () => {
     const file = document.getElementById('send-file').files[0];
     const [ filenameEl, fileErrEl ] = ['send-file-filename', 'send-file-error'].map(id => document.getElementById(id));
-    const maxSize = 10 * 1024 * 1024; // 10 MB in bytes
+    const maxSize = maxFileSize; // 10 MB in bytes
     if (!file) {
         filenameEl.textContent = "No file selected";
         return;
@@ -554,8 +557,6 @@ const decrypt = () => {
         get(hash);
     }
 }
-
-let throbber;
 
 window.addEventListener('load', () => {
     throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
