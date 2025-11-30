@@ -114,7 +114,7 @@ def store_secret(data: dict):
         f = open(fname, 'w')
         yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
         f.close()
-        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data['expires_in_value']} {time_multiplyers[data['expires_in_unit']][0]}'
+        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data["expires_in_value"]} {time_multiplyers[data["expires_in_unit"]][0]}'
         subprocess.run(["/bin/bash", "-c", at_command])
         print('Status: 201 Created')
         print('')
@@ -171,7 +171,7 @@ def retrieve_secret(token: str):
         os.remove(fname)
     else:
         # Change the number of views : it is the first line in yaml-file
-        subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]+/{data['views']}/'])
+        subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]+/{data["views"]}/'])
     print('Status: 200 OK')
     print('')
     print(json.JSONEncoder().encode(data))
