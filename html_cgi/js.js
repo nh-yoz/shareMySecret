@@ -169,7 +169,7 @@ const send = async () => {
     throbber.direction = 'crypt';
     showSpinner(true);
     const controller = new AbortController();
-    const tOutId = setTimeout(() => controller.abort(), 8000)
+    const tOutId = setTimeout(() => controller.abort(), 10000 + json.file ? json.file.size / 1024 : 0);
     const url = 'sharesecret.cgi?action=encrypt';
     const headers = {
         "Content-Type": "application/json",
@@ -216,7 +216,7 @@ const send = async () => {
 
 const get = (token) => {
     const controller = new AbortController();
-    const tOutId = setTimeout(() => controller.abort(), 8000);
+    const tOutId = setTimeout(() => controller.abort(), 15000);
     const url = 'sharesecret.cgi?action=decrypt';
     const headers = {
         "Content-Type": "application/json",
