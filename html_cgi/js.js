@@ -1,5 +1,5 @@
 let throbber;
-const maxFileSize = 5 * 1024 * 1024 // 5 Mb
+const maxFileSize = 1 * 1024 * 1024 // 5 Mb
 
 const setView = (id) => {
     const allViewsId = {
@@ -170,7 +170,7 @@ const send = async () => {
     showSpinner(true);
     const controller = new AbortController();
     const json = await getJsonWithFile()
-    const tOutId = setTimeout(() => controller.abort(), 10000 + json.file ? json.file.size / 1024 : 0);
+    const tOutId = setTimeout(() => controller.abort(), 10000 + (json.file !== null ? json.file.size / 1024 * 4 : 0));
     const url = 'sharesecret.cgi?action=encrypt';
     const headers = {
         "Content-Type": "application/json",
