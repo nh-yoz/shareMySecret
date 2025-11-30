@@ -52,7 +52,7 @@ const getJson = (parse = false) => {
 }
 
 const isFileOk = () => {
-    const maxSize = 10 * 1024 * 1024; // 10 MB in bytes
+    const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
     const file = document.getElementById('send-file').files[0];
     if (!file) {
         return true;
@@ -107,7 +107,6 @@ const validateForm = () => {
         errors['send-expires-error'] = "Must be a positive integer";
     }
     setErrors(errors);
-    console.log(isFileOk());
     return Object.keys(errors).length === 0 && isFileOk();
 }
 
