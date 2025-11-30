@@ -241,11 +241,11 @@ const get = (token) => {
             const resFileEl = document.getElementById('get-result-file');
             try {
                 if (json.file) {
-                    const [ linkEl, fileSizeEl ] = ['get-result-file-link', 'get-result-file-size'].map(id => resFileEl.getElementById(id));
+                    const [ linkEl, fileSizeEl ] = ['get-result-file-link', 'get-result-file-size'].map(id => document.getElementById(id));
                     linkEl.href = "data:application/octet-stream;base64," + json.file.data;
                     linkEl.download = json.file.name;
                     linkEl.textContent = json.file.name;
-                    fileSizeEl.textContent = `(${getHumanSize(json.file.size)})`
+                    fileSizeEl.innerHTML = `&nbsp;(${getHumanSize(json.file.size)})`;
                     resFileEl.classList.remove('no-show');
                 } else {
                     resFileEl.classList.add('no-show');

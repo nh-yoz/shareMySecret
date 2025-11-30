@@ -117,6 +117,15 @@ p.info, p.error {
     font-size: 0.85em;
 }
 
+a, a:visited {
+    color: greenyellow;
+    font-style: italic;
+}
+
+#get-result-file {
+    margin: 0 0 2rem 0;
+}
+
 input, textarea, select, button, #send-file-button {
     background-color: rgb(164, 164, 164);
     height: 30px;
