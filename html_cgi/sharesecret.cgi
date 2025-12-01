@@ -41,6 +41,11 @@ def validate_encrypt_body(data: dict):
         if data['expires_in_unit'] not in ['d', 'h', 'm']:
             raise Exception('expires_in_unit: should be one of "d", "h", "m"')
 
+        # Check if expires in at most 30 days
+        total_sec = { 'm': 60, 'h': 60 * 60, 'd': 24 * 60 * 60 }[data['expires_in_unit']] * data['expires_in_value']
+        if total_sec > 30 * 24 * 60 * 60:
+            raise Exception('expires: should be less than 30 days')
+
         # Check if message is ok (string and length > 0)
         if type(data['message']) is not str:
             raise Exception('message: must be a string')
