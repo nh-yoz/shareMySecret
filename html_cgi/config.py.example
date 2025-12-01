@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+secret_files_path = '/var/www/secret/secret'
 smtp_host = 'mail.domain.any'
 smtp_port = 465
 smtp_ssl = True

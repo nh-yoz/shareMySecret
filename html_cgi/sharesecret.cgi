@@ -100,7 +100,7 @@ def store_secret(data: dict):
         data['message'] = encrypt(data['message'], key)
         if data['file'] is not None:
             data['file']['data'] = encrypt(data['file']['data'], key)
-        fname = 'secret/' + file_name
+        fname = config.secret_files_path + '/' + file_name
         # Define expiration date
         time_multiplyers = {
             'm': ('minutes', 60),
@@ -108,14 +108,13 @@ def store_secret(data: dict):
             'd': ('days', 24 * 60 * 60)
         }
         # 'views' must be first key in file so it can be changed after each retrieval
+        # 'expires' must be the second key in file for cleanup script
         data = { 'views': 0, 'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1], **data }
-        at_command = f'echo "rm -f {os.getcwd()}/{fname}" | at now + {data["expires_in_value"]} {time_multiplyers[data["expires_in_unit"]][0]}'
         del data['expires_in_value']
         del data['expires_in_unit']
         f = open(fname, 'w')
         yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
         f.close()
-        subprocess.run(["/bin/bash", "-c", at_command])
         print('Status: 201 Created')
         print('')
         resdict = { 'token': file_name + key[:-1] }
