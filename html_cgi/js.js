@@ -1,5 +1,5 @@
 let throbber;
-const maxFileSize = 1 * 1024 * 1024 // 5 Mb
+const maxFileSize = 1 * 1024 * 1024 // 1 Mb
 
 const setView = (id) => {
     const allViewsId = {

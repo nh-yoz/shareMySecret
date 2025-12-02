@@ -8,7 +8,7 @@ smtp_auth = True
 smtp_username = 'email_user'
 smtp_password = '******************************'
 cors='https://my.domain.anys'
-max_secret_body_length = 2 * 1024 * 1024 # 7 MB - Must be ~30-40 % more than maxFileSize in javascript (base64 encoding)
+max_secret_body_length = 2 * 1024 * 1024 # 2 MB - Must be at least ~30-40 % more than maxFileSize in javascript (base64 encoding)
 max_email_body_length = 102400
 
 
