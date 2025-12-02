@@ -126,6 +126,10 @@ a, a:visited {
     margin: 0 0 2rem 0;
 }
 
+#pwd-copy {
+    margin-left: auto;
+}
+
 input, textarea, select, button, #send-file-button {
     background-color: rgb(164, 164, 164);
     height: 30px;

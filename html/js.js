@@ -171,7 +171,7 @@ const send = async () => {
     const controller = new AbortController();
     const json = await getJsonWithFile()
     const tOutId = setTimeout(() => controller.abort(), 10000 + (json.file !== null ? json.file.size / 1024 * 4 : 0));
-    const url = 'sharesecret.cgi?action=encrypt';
+    const url = '/cgi/sharesecret.cgi?action=encrypt';
     const headers = {
         "Content-Type": "application/json",
         "Origin": window.location.hostname,
@@ -217,7 +217,7 @@ const send = async () => {
 const get = (token) => {
     const controller = new AbortController();
     const tOutId = setTimeout(() => controller.abort(), 15000);
-    const url = 'sharesecret.cgi?action=decrypt';
+    const url = '/cgi/sharesecret.cgi?action=decrypt';
     const headers = {
         "Content-Type": "application/json",
         "Origin": window.location.hostname,
@@ -339,7 +339,7 @@ const sendEmail = () => {
         showSpinner(true);
         const controller = new AbortController();
         const tOutId = setTimeout(() => controller.abort(), 8000);
-        const url = `sendmail.cgi`;
+        const url = `/cgi/sendmail.cgi`;
         const headers = {
 	    "Content-Type": "application/json",
 	    "Origin": window.location.hostname,
