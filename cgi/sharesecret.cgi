@@ -153,7 +153,7 @@ def validate_arguments(given_args, valid_args):
 def retrieve_secret(token: str):
     global msg_sent
     try:
-        fname = 'secret/' + token[0:10]
+        fname = config.secret_files_path + '/' + token[0:10]
         if not os.path.exists(fname):
             respond_with_error(404, 'Secret message doesn\'t exist')
         key = token[10:] + '='
