@@ -1,3 +1,4 @@
+import sys
 import config, json, os, yaml, time, cgi
 from cryptography.fernet import Fernet
 
@@ -55,12 +56,16 @@ def respond(status: int, payload: str = ''):
 
 
 def validate_token(token: str) -> bool:
+    if type(token) != str or len(token) != 53:
+        respond_with_error(400, 'Invalid token')
+        return False
     filename = token[0:10]
+    key = token[10:] + '='
     fname = config.secret_files_path + '/' + filename
     # Check file exists
     if not os.path.exists(fname):
         respond_with_error(404, 'Secret message doesn\'t exist')
-    key = token[10:] + '='
+        return False
     # Load only beginning of file to check expiry and decyption key
     with open(fname, "r", encoding="utf-8") as f:
         first_lines = "".join([next(f) for _ in range(3)])
@@ -75,9 +80,10 @@ def validate_token(token: str) -> bool:
         if decrypt(data['control'], key) != filename:
             respond_with_error(400, 'Invalid token')
             return False
-    except Exception as err:
+    except:
         respond_with_error(400, 'Invalid token')
         return False
+    return True
 
 class Content:
     type=os.environ.get("CONTENT_TYPE", "").lower()
@@ -88,5 +94,7 @@ class Request:
     method=os.environ.get("REQUEST_METHOD", "").upper()
     arguments = cgi.parse()
     content = Content()
+    def body():
+        return sys.stdin.read()
 
 request = Request()

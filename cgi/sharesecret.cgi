@@ -1,91 +1,63 @@
 #!/usr/bin/python3
 import re
-import os, cgi, sys, json, random, string, traceback, time, subprocess, yaml
-import config, common
+import os, sys, json, random, string, traceback, time, subprocess, yaml
+import config, common, validation
 from common import request as req
 
 def validate_encrypt_body(data: dict):
+    test_dict = {
+        'message': [ 'and', (('type', 'str'), ('min', 1))],
+        'file': [ 'or', (('type', 'none'), ('type', 'dict')) ],
+        'max_views': [ 'and', (('type', 'int'), ('min', 0))],
+        'expires_in_unit': [ 'oneof', ('m', 'h', 'd') ],
+        'expires_in_value': [ 'and', (('type', 'int'), ('min', 0))]
+    }
     try:
-        keys = ['message', 'file', 'max_views', 'expires_in_value', 'expires_in_unit']
-        # Check if all keys are available
-        if any((missing_key:=key) not in data for key in keys):
-            raise Exception(f'Missing key: \'{missing_key}\'')
-        if any((invalid_key:=key) not in keys for key in data):
-            raise Exception(f'Invalid key: \'{invalid_key}\'')
-
-        # Check if limit_views is integer and >= 0
-        if type(data['max_views']) is not int:
-            raise Exception('max_views: must be an integer')
-        if data['max_views'] < 0:
-            raise Exception('max_views: must be equal or greater than 0')
-
-        # Check if expires_in_value is acceptable (integer > 0)
-        if type(data['expires_in_value']) is not int:
-            raise Exception('expires_in_value: must be an integer')
-        if data['expires_in_value'] <= 0:
-            raise Exception('expires_in_value: must be greater than 0')
-
-        # Check expires_in_unit is 'd', 'h' or 'm'
-        if type(data['expires_in_unit']) is not str:
-            raise Exception('expires_in_unit: must be a string')
-        if data['expires_in_unit'] not in ['d', 'h', 'm']:
-            raise Exception('expires_in_unit: should be one of "d", "h", "m"')
-
+        validation.validate_dict(data, test_dict)
+    except Exception as err:
+        common.respond_with_error(400, err)
+        return False
+    try:
         # Check if expires in at most 30 days
         total_sec = { 'm': 60, 'h': 60 * 60, 'd': 24 * 60 * 60 }[data['expires_in_unit']] * data['expires_in_value']
         if total_sec > 30 * 24 * 60 * 60:
             raise Exception('expires: should be less than 30 days')
 
-        # Check if message is ok (string and length > 0)
-        if type(data['message']) is not str:
-            raise Exception('message: must be a string')
-        if len(data['message']) == 0:
-            raise Exception('message: should not be empty')
+        # Check if message is base 64
         if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', data['message']):
             raise Exception('message: should be base64 encoded')
 
-        # Check if file is ok
-        d = data['file'] 
-        if d is not None and not isinstance(d, dict):
-            raise Exception('file: must be null or an object')
-        if d is not None:
-            keys = ['name', 'size', 'data']
-            # Check if all keys are available and no extra keys
-            if any((missing_key:=key) not in d for key in keys):
-                raise Exception(f'Missing key in \'file\': \'{missing_key}\'')
-            if any((invalid_key:=key) not in keys for key in d):
-                raise Exception(f'Invalid key in \'file\': \'{invalid_key}\'')
-            # Check types of file
-            for t in [ ('name', str, 'a string'), ('size', int, 'an integer'), ('data', str, 'a string') ]:
-                if type(d[t[0]]) is not t[1]:
-                    raise Exception(f'file.{t[0]}: must be {t[2]}')
-            if d['size'] < 1:
-                raise Exception(f'file.size must be > 0')
-            if len(d['data']) == 0:
-                raise Exception('file.data: should not be empty')
-            if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', d['data']):
+        # Further check if file is ok
+        test_dict = {
+            'name': [ 'and', (('type', 'str'), ('minmax', '[1,256]')) ],
+            'size': [ 'and', (('type', 'int'), ('min', 1)) ],
+            'data': [ 'and', (('type', 'str'), ('min', 0)) ]
+        }
+        try:
+            validation.validate_dict(data['file'], test_dict)
+        except Exception as err:
+            common.respond_with_error(400, err)
+            return False
+        if data['file'] is not None:
+            if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', data['file']['data']):
                 raise Exception('file.data: should be base64 encoded')
-
         return True
     except Exception as err:
         common.respond_with_error(400, err)
         return False
 
 
-def validate_decrypt_body(data: dict):
+def validate_decrypt_body(data: dict) -> bool:
+    test_dict = {
+        'token': [ ('type', 'str' ), ('minmax', '[53,53]') ]
+    }
     try:
-        keys = ['token']
-        # Check if all keys are available
-        if any((missing_key:=key) not in data for key in keys):
-            raise Exception(f'Missing key: \'{missing_key}\'')
-        if any((invalid_key:=key) not in keys for key in data):
-            raise Exception(f'Invalid key: \'{invalid_key}\'')
-        if not validate_token(data['token']):
-            raise Exception('Invalid value for \'token\'')
-        return True
+        validation.validate_dict(data, test_dict)
     except Exception as err:
         common.respond_with_error(400, err)
         return False
+    return common.validate_token(data['token'])
+
 
 def store_secret(data: dict):
     try:
@@ -104,6 +76,7 @@ def store_secret(data: dict):
         }
         # 'views' must be first key in file so it can be changed after each retrieval
         # 'expires' must be the second key in file for cleanup script
+        # 'control' must be the third key in file for checking key
         data = { 'views': 0, 'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1], **data }
         del data['expires_in_value']
         del data['expires_in_unit']
@@ -117,12 +90,6 @@ def store_secret(data: dict):
         print(traceback.format_exc(), file=sys.stderr)
         common.respond_with_error(500, 'The secret message could not be saved')
 
-def validate_token(token: str) -> bool:
-    if type(token) is not str:
-        return False
-    if len(token) != 53:
-        return False
-    return True
 
 def validate_arguments(given_args, valid_args):
     for key in given_args.keys():
@@ -141,8 +108,6 @@ def validate_arguments(given_args, valid_args):
 
 def retrieve_secret(token: str):
     try:
-        if not common.validate_token():
-            return
         filename = token[0:10]
         fname = config.secret_files_path + '/' + filename
         key = token[10:] + '='
@@ -163,6 +128,7 @@ def retrieve_secret(token: str):
         else:
             # Change the number of views without resaving the file: it is the first line in yaml-file
             subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
+        del data['control']
         payload = json.JSONEncoder().encode(data)
         common.respond(200, payload)
     except Exception as err:
@@ -171,42 +137,37 @@ def retrieve_secret(token: str):
 
 
 
-
-
 ##########################
 # Main program
 ##########################
 
 try:
-    method=os.environ.get("REQUEST_METHOD", "").upper()
-    cont_type=os.environ.get("CONTENT_TYPE", "").lower()
-    cont_len=int(os.environ.get("CONTENT_LENGTH", "0"))
-    arguments = cgi.parse() # Should return response as { 'action': encrypt/decrypt  }
     common.print_headers(methods = ['POST', 'OPTIONS'])
-    if method != 'OPTIONS':
+    if req.method == 'OPTIONS':
+        common.respond(204, '')
+    elif req.method == 'POST':
         print('Content-type: application/json')
-    if method == 'OPTIONS':
-        print('')
-    elif method == 'POST':
-        print('Accept: application/json')
-        if not validate_arguments(arguments, { 'allowed': ('action',), 'required': ('action',) }):
-            common.respond_with_error(405, f"The method '{method}' is not allowed")
-        elif arguments['action'][0] not in ('encrypt', 'decrypt'):
+        if not validate_arguments(req.arguments, { 'allowed': ('action',), 'required': ('action',) }):
+            exit()
+        elif req.arguments['action'][0] not in ('encrypt', 'decrypt'):
             common.respond_with_error(400, 'Invalid action, must be \'encrypt\' or \'decrypt\'')
-        elif cont_type != 'application/json' or cont_len == 0:
+        elif req.content.type != 'application/json' or req.content.length == 0:
             common.respond_with_error(415, 'Json body required')
-        elif cont_len > config.max_secret_body_length:
+        elif req.content.length > config.max_secret_body_length:
             common.respond_with_error(413, f'Body must be less or equal to {config.max_secret_body_length} bytes')
         else:
             try:
-                body = sys.stdin.read()
+                body = req.body()
                 data = json.loads(body)
-                if arguments['action'][0] == 'encrypt' and validate_encrypt_body(data):
-                    store_secret(data)
-                elif arguments['action'][0] == 'decrypt' and validate_decrypt_body(data):
-                    retrieve_secret(data['token'])
             except:
                 common.respond_with_error(400, 'Invalid json body')
+                exit()
+            if req.arguments['action'][0] == 'encrypt' and validate_encrypt_body(data):
+                store_secret(data)
+            elif req.arguments['action'][0] == 'decrypt' and validate_decrypt_body(data):
+                retrieve_secret(data['token'])
+    else:
+        common.respond_with_error(405, f"The method '{req.method}' is not allowed")
 except Exception as err:
     print(traceback.format_exc(), file=sys.stderr)
     common.respond_with_error(500, 'Unknown error')

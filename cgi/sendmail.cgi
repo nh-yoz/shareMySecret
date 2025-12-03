@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import smtplib, ssl, json, traceback, sys, re, cgi, os
+import smtplib, ssl, json, traceback, sys, re
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 import config, validation, common
@@ -16,8 +16,8 @@ def validate_body(obj):
     try:
         validation.validate_dict(obj, test_dict)
     except Exception as err:
-            common.respond_with_error(400, err)
-            return False
+        common.respond_with_error(400, err)
+        return False
     try:
         test_dict = {
             'name': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
@@ -26,14 +26,9 @@ def validate_body(obj):
         for item in obj['to']:
             validation.validate_dict(item, test_dict)
     except Exception as err:
-            common.respond_with_error(400, err)
-            return False
-    # Verify that the secret file exists
-    fname = config.secret_files_path + '/' + obj['token'][0:10]
-    if not os.path.exists(fname):
-        common.respond_with_error(400, 'Invalid token')
+        common.respond_with_error(400, err)
         return False
-    return True
+    return common.validate_token(obj['token'])
 
 
 def replace_placeholders(text: str, senders_name: str, recipient_name: str, token: str):
@@ -134,14 +129,14 @@ email_html= '''
     </head>
     <body>
         <p>Hello {{recipient_name}},</p> 
-        <p>This is an automatic email to notify you that a secure private message has been sent to you by {{senders_name}} via **{{site_name}}** ({{site_domain_name}}).</p>
-        <p>If you don't know this sender or didn't expect to receive this message, feel free to ignore it.</p>
+        <p>This is an automated email to let you know that {{senders_name}} has sent you a secure private message via **{{site_name}}** ({{site_domain_name}}).</p>
+        <p>If you do not know the sender or were not expecting this message, you can safely ignore it.</p>
         <p>To view your message, click the link below:</p>
         <a href="{{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html#{{token}}" class="button">View Secret Message</a>
-        <p>Please note: This message will self-destruct after a certain time or number of views (defined by the sender).</p>
+        <p>Please note: This message will self-destruct after a certain amount of time or number of views, as defined by the sender.</p>
         <hr>
         <p class="footer">
-            Want to send secure messages? Visit <a href="{{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html">{{site_protocol}}://{{site_domain_name}}{{site_root_path}}</a>.
+            Want to send secure messages yourself? Visit <a href="{{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html">{{site_protocol}}://{{site_domain_name}}{{site_root_path}}</a>.
         </p>
         </body>
 </html>
@@ -149,34 +144,28 @@ email_html= '''
 email_text = '''
         Hello {{recipient_name}},
 
-        This is an automatic email to notify you that a secure private message has been sent to you by {{senders_name}} via **{{site_name}}** ({{site_domain_name}}).
+        This is an automated email to let you know that {{senders_name}} has sent you a secure private message via **{{site_name}}** ({{site_domain_name}}).
 
-        If you don't know this sender or didn't expect to receive this message, feel free to ignore it.
+        If you do not know the sender or were not expecting this message, you can safely ignore it.
 
-        To view your message, copy the link below in your browser's address bar:
+        To view your message, copy the link below to your browser's address bar:
         {{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html#{{token}}
         
-        Please note: This message will self-destruct after a certain time or number of views (defined by the sender).
+        Please note: This message will self-destruct after a certain amount of time or number of views, as defined by the sender.
 
-        Want to send secure messages? Visit {{site_protocol}}://{{site_domain_name}}{{site_root_path}}.
+        Want to send secure messages yourself? Visit {{site_protocol}}://{{site_domain_name}}{{site_root_path}}.
 '''
 
 
 try:
-    #method=os.environ.get("REQUEST_METHOD", "").upper()
-    #cont_type=os.environ.get("CONTENT_TYPE", "").lower()
-    #cont_len=int(os.environ.get("CONTENT_LENGTH", "0"))
     common.print_headers(methods = ['POST', 'OPTIONS'])
-    arguments = cgi.parse()
-    if req.method != 'OPTIONS':
-        print('Content-type: application/json')
     if req.method == 'OPTIONS':
-        # Do nothing
-        pass
+        common.respond(200, '')
+        exit()
     elif req.method == 'POST':
-        print('Accept: application/json')
-        if arguments:
-            common.respond_with_error(400, f"No query parameters are allowd")
+        print('Content-type: application/json')
+        if req.arguments:
+            common.respond_with_error(400, f"No query parameters are allowed")
         elif req.content.type != 'application/json' or req.content.length == 0:
             common.respond_with_error(415, 'Json body required')
         elif req.content.length > config.max_email_body_length:
@@ -185,8 +174,9 @@ try:
         try:
             body_obj = json.loads(body)
         except:
-            common.respond_with_error(400, 'Invalid body')
-        if not common.msg_sent and validate_body(body_obj) and common.validate_token(body_obj['token']):
+            common.respond_with_error(400, 'Invalid json body')
+            exit()
+        if validate_body(body_obj):
             send_mail(body_obj)
             common.respond(204)
     else:
