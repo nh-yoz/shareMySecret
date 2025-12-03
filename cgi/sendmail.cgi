@@ -1,30 +1,11 @@
 #!/usr/bin/python3
 import smtplib, ssl, json, traceback, sys, re, cgi, os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
-import config, validation
+import config, validation, common
+from common import request as req
 
-msg_sent = False
 
-def respond_with_error(status: int, message: str):
-    global msg_sent
-    errors = {
-        '400': 'Bad Request',
-        '401': 'Unauthorized',
-        '404': 'Not Found',
-        '405': 'Method Not Allowed',
-        '410': 'Gone',
-        '413': 'Payload Too Large',
-        '415': 'Unsupported Media Type',
-        '500': 'Internal Server Error'
-    }
-    print('Status: ' + str(status) + ' ' + errors[str(status)])
-    print('')
-    resdict = { 'status': status, 'message': str(message) }
-    print(json.JSONEncoder().encode(resdict))
-    msg_sent = True
 
 def validate_body(obj):
     test_dict = {
@@ -35,22 +16,22 @@ def validate_body(obj):
     try:
         validation.validate_dict(obj, test_dict)
     except Exception as err:
-            respond_with_error(400, err)
+            common.respond_with_error(400, err)
             return False
     try:
         test_dict = {
             'name': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
             'email': [ 'email' ],
         }
-        for item in test_dict['to']:
+        for item in obj['to']:
             validation.validate_dict(item, test_dict)
     except Exception as err:
-            respond_with_error(400, err)
+            common.respond_with_error(400, err)
             return False
     # Verify that the secret file exists
     fname = config.secret_files_path + '/' + obj['token'][0:10]
     if not os.path.exists(fname):
-        respond_with_error(400, 'Invalid token')
+        common.respond_with_error(400, 'Invalid token')
         return False
     return True
 
@@ -71,20 +52,6 @@ def replace_placeholders(text: str, senders_name: str, recipient_name: str, toke
     return text
 
 
-def send_mail_old(obj):
-    global subject, email_html, email_text
-    for recipient in obj['to']:
-        msg = MIMEMultipart("alternative")
-        msg['From'] = config.smtp_from
-        msg['To'] = recipient['email']
-        msg['Subject'] = replace_placeholders(subject)
-        msg.attach(MIMEText(replace_placeholders(email_text, obj['from'], recipient['name']), obj['token'], 'plain'))
-        msg.attach(MIMEText(replace_placeholders(email_html, obj['from'], recipient['name']), obj['token'], 'html'))
-        server = smtplib.SMTP_SSL(config.smtp_host, config.smtp_port) if config.smtp_ssl else smtplib.SMTP(config.smtp_host, config.smtp_port)
-        if config.smtp_auth:
-            server.login(config.smtp_username, config.smtp_password)
-        server.send_message(msg)
-
 def send_mail(obj):
     global subject, email_html, email_text
     emails = []
@@ -92,7 +59,7 @@ def send_mail(obj):
         msg = EmailMessage()
         msg['From'] = config.smtp_from
         msg['To'] = recipient['email']
-        msg['Subject'] = replace_placeholders(subject)
+        msg['Subject'] = replace_placeholders(subject, obj['from'], recipient['name'], obj['token'])
         
         # Required headers for spam filters:
         msg['Date'] = formatdate(localtime=True)
@@ -102,8 +69,8 @@ def send_mail(obj):
         msg.set_charset('utf-8')
 
         # Add text + HTML alternative parts
-        msg.set_content(replace_placeholders(email_text, obj['from'], recipient['name']), obj['token'], subtype='plain', charset='utf-8')
-        msg.add_alternative(replace_placeholders(email_html, obj['from'], recipient['name']), obj['token'], subtype='html', charset='utf-8')
+        msg.set_content(replace_placeholders(email_text, obj['from'], recipient['name'], obj['token']), subtype='plain', charset='utf-8')
+        msg.add_alternative(replace_placeholders(email_html, obj['from'], recipient['name'], obj['token']), subtype='html', charset='utf-8')
         emails.append(msg)
 
     # Connect and send
@@ -135,7 +102,7 @@ email_html= '''
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Secret Message Notification</title>
+        <title>Secure Message Notification</title>
         <style>
             body {
                 font-family: Arial, Helvetica, sans-serif;
@@ -195,43 +162,36 @@ email_text = '''
 '''
 
 
-
 try:
-    print(f'Access-Control-Allow-Origin: {config.cors}')
-    print('Access-Control-Allow-Methods: POST, OPTIONS')
-    print('Access-Control-Allow-Headers: Content-Type')
-    print('Access-Control-Max-Age: 86400') # Cache for 1 day (86400 seconds)
-    print('Vary: Origin')
-    print('Cache-Control: no-store')
-    method=os.environ.get("REQUEST_METHOD", "").upper()
-    cont_type=os.environ.get("CONTENT_TYPE", "").lower()
-    cont_len=int(os.environ.get("CONTENT_LENGTH", "0"))
+    #method=os.environ.get("REQUEST_METHOD", "").upper()
+    #cont_type=os.environ.get("CONTENT_TYPE", "").lower()
+    #cont_len=int(os.environ.get("CONTENT_LENGTH", "0"))
+    common.print_headers(methods = ['POST', 'OPTIONS'])
     arguments = cgi.parse()
-    if method != 'OPTIONS':
+    if req.method != 'OPTIONS':
         print('Content-type: application/json')
-    if method == 'OPTIONS':
+    if req.method == 'OPTIONS':
         # Do nothing
         pass
-    elif method == 'POST':
+    elif req.method == 'POST':
         print('Accept: application/json')
         if arguments:
-            respond_with_error(400, f"No query parameters are allowd")
-        elif cont_type != 'application/json' or cont_len == 0:
-            respond_with_error(415, 'Json body required')
-        elif cont_len > config.max_email_body_length:
-            respond_with_error(413, f'Body must be less or equal to {config.max_email_body_length} bytes')
+            common.respond_with_error(400, f"No query parameters are allowd")
+        elif req.content.type != 'application/json' or req.content.length == 0:
+            common.respond_with_error(415, 'Json body required')
+        elif req.content.length > config.max_email_body_length:
+            common.respond_with_error(413, f'Body must be less or equal to {config.max_email_body_length} bytes')
         body = sys.stdin.read()
         try:
             body_obj = json.loads(body)
         except:
-            respond_with_error(400, 'Invalid body')
-        if not msg_sent and validate_body(body_obj):
+            common.respond_with_error(400, 'Invalid body')
+        if not common.msg_sent and validate_body(body_obj) and common.validate_token(body_obj['token']):
             send_mail(body_obj)
-            print('Status: 204')
-            print('')
+            common.respond(204)
     else:
-        respond_with_error(405, f"The method '{method}' is not allowed")
+        common.respond_with_error(405, f"The method '{req.method}' is not allowed")
 except Exception:
     print(traceback.format_exc(), file=sys.stderr)
-    respond_with_error(500, 'Unknown error')
+    common.respond_with_error(500, 'Unknown error')
 

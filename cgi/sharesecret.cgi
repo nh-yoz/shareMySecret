@@ -1,18 +1,8 @@
 #!/usr/bin/python3
 import re
-import os, cgi, sys, json, random, string, datetime, traceback, time, subprocess, yaml
-from cryptography.fernet import Fernet
-import config
-
-
-msg_sent = False
-
-def encrypt(message: str, key: str) -> str:
-    return Fernet(key).encrypt(message.encode()).decode()
-
-def decrypt(message: str, key: str) -> str:
-    return Fernet(key.encode()).decrypt(message.encode()).decode()
-
+import os, cgi, sys, json, random, string, traceback, time, subprocess, yaml
+import config, common
+from common import request as req
 
 def validate_encrypt_body(data: dict):
     try:
@@ -78,7 +68,7 @@ def validate_encrypt_body(data: dict):
 
         return True
     except Exception as err:
-        respond_with_error(400, err)
+        common.respond_with_error(400, err)
         return False
 
 
@@ -94,18 +84,17 @@ def validate_decrypt_body(data: dict):
             raise Exception('Invalid value for \'token\'')
         return True
     except Exception as err:
-        respond_with_error(400, err)
+        common.respond_with_error(400, err)
         return False
 
 def store_secret(data: dict):
-    global msg_sent
     try:
         file_name = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
-        key = Fernet.generate_key().decode()
-        data['control'] = encrypt(file_name, key)
-        data['message'] = encrypt(data['message'], key)
+        key = common.get_key()
+        data['control'] = common.encrypt(file_name, key)
+        data['message'] = common.encrypt(data['message'], key)
         if data['file'] is not None:
-            data['file']['data'] = encrypt(data['file']['data'], key)
+            data['file']['data'] = common.encrypt(data['file']['data'], key)
         fname = config.secret_files_path + '/' + file_name
         # Define expiration date
         time_multiplyers = {
@@ -121,105 +110,66 @@ def store_secret(data: dict):
         f = open(fname, 'w')
         yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
         f.close()
-        print('Status: 201 Created')
-        print('')
         resdict = { 'token': file_name + key[:-1] }
-        print(json.JSONEncoder().encode(resdict))
-        msg_sent = True
+        payload = json.JSONEncoder().encode(resdict)
+        common.respond(201, payload)
     except Exception as err:
         print(traceback.format_exc(), file=sys.stderr)
-        respond_with_error(500, 'The secret message could not be saved')
+        common.respond_with_error(500, 'The secret message could not be saved')
 
 def validate_token(token: str) -> bool:
     if type(token) is not str:
         return False
-    if len(token) < 15:
+    if len(token) != 53:
         return False
     return True
 
 def validate_arguments(given_args, valid_args):
     for key in given_args.keys():
         if not key in valid_args['allowed']:
-            respond_with_error(400, f"Invalid parameter '{key}'")
+            common.respond_with_error(400, f"Invalid parameter '{key}'")
             return False
         if len(given_args[key]) > 1:
-            respond_with_error(400, f"Too many values for parameter '{key}'")
+            common.respond_with_error(400, f"Too many values for parameter '{key}'")
             return False
     for key in valid_args['required']:
         if not key in given_args.keys():
-            respond_with_error(400, f"Missing required parameter '{key}'")
+            common.respond_with_error(400, f"Missing required parameter '{key}'")
             return False
     return True
 
+
 def retrieve_secret(token: str):
-    global msg_sent
     try:
+        if not common.validate_token():
+            return
         filename = token[0:10]
         fname = config.secret_files_path + '/' + filename
-        # Check file exists
-        if not os.path.exists(fname):
-            respond_with_error(404, 'Secret message doesn\'t exist')
         key = token[10:] + '='
-        # Load only beginning of file to check expiry and decyption key
-        with open(fname, "r", encoding="utf-8") as f:
-            first_lines = "".join([next(f) for _ in range(3)])
-            # Parse only the first 3 lines
-            data = yaml.safe_load(first_lines)
-        # check validity limit
-        if time.time() > data['expires']:
-            os.remove(fname)
-            respond_with_error(410, 'The secret message has expired')
-            return
-        try:
-            if decrypt(data['control'], key) != filename:
-                respond_with_error(400, 'Invalid token')
-                return
-        except Exception as err:
-            respond_with_error(400, 'Invalid token')
-            return
         # File and token is valid, go on...
         f = open(fname, 'r')
         data = yaml.safe_load(f.read())
         f.close()
         data['views'] += 1
         try:
-            data['message'] = decrypt(data['message'], key)
+            data['message'] = common.decrypt(data['message'], key)
             if data['file'] is not None:
-                data['file']['data'] = decrypt(data['file']['data'], key)
+                data['file']['data'] = common.decrypt(data['file']['data'], key)
         except Exception as err:
-            respond_with_error(400, 'Invalid token')
+            common.respond_with_error(400, 'Invalid token')
             return
         if data['views'] >= data['max_views'] and data['max_views'] != 0:
             os.remove(fname)
         else:
             # Change the number of views without resaving the file: it is the first line in yaml-file
             subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
-        print('Status: 200 OK')
-        print('')
-        print(json.JSONEncoder().encode(data))
-        msg_sent = True
+        payload = json.JSONEncoder().encode(data)
+        common.respond(200, payload)
     except Exception as err:
         print(traceback.format_exc(), file=sys.stderr)
-        respond_with_error(500, 'Unknown error')
+        common.respond_with_error(500, 'Unknown error')
 
 
-def respond_with_error(status: int, message: str):
-    global msg_sent
-    errors = {
-        '400': 'Bad Request',
-        '401': 'Unauthorized',
-        '404': 'Not Found',
-        '405': 'Method Not Allowed',
-        '410': 'Gone',
-        '413': 'Payload Too Large',
-        '415': 'Unsupported Media Type',
-        '500': 'Internal Server Error'
-    }
-    print('Status: ' + str(status) + ' ' + errors[str(status)])
-    print('')
-    resdict = { 'status': status, 'message': str(message) }
-    print(json.JSONEncoder().encode(resdict))
-    msg_sent = True
 
 
 
@@ -228,16 +178,11 @@ def respond_with_error(status: int, message: str):
 ##########################
 
 try:
-    print(f'Access-Control-Allow-Origin: {config.cors}')
-    print('Access-Control-Allow-Methods: GET, POST, OPTIONS')
-    print('Access-Control-Allow-Headers: Content-Type')
-    print('Access-Control-Max-Age: 86400') # Cache for 1 day (86400 seconds)
-    print('Vary: Origin')
-    print('Cache-Control: no-store')
     method=os.environ.get("REQUEST_METHOD", "").upper()
     cont_type=os.environ.get("CONTENT_TYPE", "").lower()
     cont_len=int(os.environ.get("CONTENT_LENGTH", "0"))
     arguments = cgi.parse() # Should return response as { 'action': encrypt/decrypt  }
+    common.print_headers(methods = ['POST', 'OPTIONS'])
     if method != 'OPTIONS':
         print('Content-type: application/json')
     if method == 'OPTIONS':
@@ -245,13 +190,13 @@ try:
     elif method == 'POST':
         print('Accept: application/json')
         if not validate_arguments(arguments, { 'allowed': ('action',), 'required': ('action',) }):
-            respond_with_error(405, f"The method '{method}' is not allowed")
+            common.respond_with_error(405, f"The method '{method}' is not allowed")
         elif arguments['action'][0] not in ('encrypt', 'decrypt'):
-            respond_with_error(400, 'Invalid action, must be \'encrypt\' or \'decrypt\'')
+            common.respond_with_error(400, 'Invalid action, must be \'encrypt\' or \'decrypt\'')
         elif cont_type != 'application/json' or cont_len == 0:
-            respond_with_error(415, 'Json body required')
+            common.respond_with_error(415, 'Json body required')
         elif cont_len > config.max_secret_body_length:
-            respond_with_error(413, f'Body must be less or equal to {config.max_secret_body_length} bytes')
+            common.respond_with_error(413, f'Body must be less or equal to {config.max_secret_body_length} bytes')
         else:
             try:
                 body = sys.stdin.read()
@@ -261,7 +206,7 @@ try:
                 elif arguments['action'][0] == 'decrypt' and validate_decrypt_body(data):
                     retrieve_secret(data['token'])
             except:
-                respond_with_error(400, 'Invalid json body')
+                common.respond_with_error(400, 'Invalid json body')
 except Exception as err:
     print(traceback.format_exc(), file=sys.stderr)
-    respond_with_error(500, 'Unknown error')
+    common.respond_with_error(500, 'Unknown error')
