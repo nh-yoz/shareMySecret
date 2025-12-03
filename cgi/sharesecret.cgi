@@ -102,6 +102,7 @@ def store_secret(data: dict):
     try:
         file_name = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
         key = Fernet.generate_key().decode()
+        data['control'] = encrypt(file_name, key)
         data['message'] = encrypt(data['message'], key)
         if data['file'] is not None:
             data['file']['data'] = encrypt(data['file']['data'], key)
@@ -153,18 +154,33 @@ def validate_arguments(given_args, valid_args):
 def retrieve_secret(token: str):
     global msg_sent
     try:
-        fname = config.secret_files_path + '/' + token[0:10]
+        filename = token[0:10]
+        fname = config.secret_files_path + '/' + filename
+        # Check file exists
         if not os.path.exists(fname):
             respond_with_error(404, 'Secret message doesn\'t exist')
         key = token[10:] + '='
-        f = open(fname, 'r')
-        data = yaml.safe_load(f.read())
-        f.close()
+        # Load only beginning of file to check expiry and decyption key
+        with open(fname, "r", encoding="utf-8") as f:
+            first_lines = "".join([next(f) for _ in range(3)])
+            # Parse only the first 3 lines
+            data = yaml.safe_load(first_lines)
         # check validity limit
         if time.time() > data['expires']:
             os.remove(fname)
             respond_with_error(410, 'The secret message has expired')
             return
+        try:
+            if decrypt(data['control'], key) != filename:
+                respond_with_error(400, 'Invalid token')
+                return
+        except Exception as err:
+            respond_with_error(400, 'Invalid token')
+            return
+        # File and token is valid, go on...
+        f = open(fname, 'r')
+        data = yaml.safe_load(f.read())
+        f.close()
         data['views'] += 1
         try:
             data['message'] = decrypt(data['message'], key)
@@ -176,7 +192,7 @@ def retrieve_secret(token: str):
         if data['views'] >= data['max_views'] and data['max_views'] != 0:
             os.remove(fname)
         else:
-            # Change the number of views : it is the first line in yaml-file
+            # Change the number of views without resaving the file: it is the first line in yaml-file
             subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
         print('Status: 200 OK')
         print('')
@@ -185,7 +201,6 @@ def retrieve_secret(token: str):
     except Exception as err:
         print(traceback.format_exc(), file=sys.stderr)
         respond_with_error(500, 'Unknown error')
-
 
 
 def respond_with_error(status: int, message: str):

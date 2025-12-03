@@ -1,13 +1,17 @@
 #!/usr/bin/python3
+site_protocol = 'https'
+site_domain_name = 'my.domain.any'
+site_root_path = "/" # Must end with "/"
+site_name = 'Share my secret'
 secret_files_path = '/var/www/secret/data'
 smtp_host = 'mail.domain.any'
 smtp_port = 465
 smtp_ssl = True
-smtp_from = 'Share my secret <me@domain.any>'
+smtp_from = 'Secure message service <notifications@domain.any>'
 smtp_auth = True
 smtp_username = 'email_user'
 smtp_password = '******************************'
-cors='https://my.domain.anys'
+cors = f'{site_protocol}://{site_domain_name}' # Change if you want another cors policy
 max_secret_body_length = 2 * 1024 * 1024 # 2 MB - Must be at least ~30-40 % more than maxFileSize in javascript (base64 encoding)
 max_email_body_length = 102400
 

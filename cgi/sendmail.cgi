@@ -1,10 +1,11 @@
 #!/usr/bin/python3
-import smtplib, json, traceback, sys, re, base64, cgi, os
+import smtplib, ssl, json, traceback, sys, re, cgi, os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import config
+from email.message import EmailMessage
+from email.utils import formatdate, make_msgid
+import config, validation
 
-email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
 msg_sent = False
 
 def respond_with_error(status: int, message: str):
@@ -25,69 +26,175 @@ def respond_with_error(status: int, message: str):
     print(json.JSONEncoder().encode(resdict))
     msg_sent = True
 
-def is_valid_email(email: str) -> bool:
-    return re.fullmatch(email_regex, email)
-
-def is_string(value) -> bool:
-    return type(value) == str
-
-def is_base64(value) -> bool:
-    try:
-        return base64.b64encode(base64.b64decode(value)).decode('utf-8') == value
-    except Exception:
-        return False
-
-def is_string_array(value) -> bool:
-    if not isinstance(value, list):
-        return False
-    for v in value:
-        if not is_string(v):
-            return False
-    return True
-
 def validate_body(obj):
     test_dict = {
-        'to': ['an array of email addresses (strings)', is_string_array],
-        'subject': ['a string', is_string],
-        'text_message': ['a string', is_string],
-        'html_message': ['a string', is_string]
+        'from': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
+        'to': [ 'and', (('type', 'list' ), ('minmax', '[1,10]')) ],
+        'token': [ ('type', 'str' ), ('minmax', '[53,53]') ]
     }
-    for key in test_dict:
-        if key not in obj:
-            respond_with_error(400, f'Body is missing property "{key}"')
+    try:
+        validation.validate_dict(obj, test_dict)
+    except Exception as err:
+            respond_with_error(400, err)
             return False
-        elif not test_dict[key][1](obj[key]):
-            respond_with_error(400, f'The property "{key}" should be {test_dict[key][0]}')
+    try:
+        test_dict = {
+            'name': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
+            'email': [ 'email' ],
+        }
+        for item in test_dict['to']:
+            validation.validate_dict(item, test_dict)
+    except Exception as err:
+            respond_with_error(400, err)
             return False
-    if not is_base64(obj['html_message']):
-        respond_with_error(400, f'The property "{key}" should be base64 encoded')
+    # Verify that the secret file exists
+    fname = config.secret_files_path + '/' + obj['token'][0:10]
+    if not os.path.exists(fname):
+        respond_with_error(400, 'Invalid token')
         return False
-    if is_base64(obj['html_message']):
-        obj['html_message'] = base64.b64decode(obj['html_message']).decode('utf-8')
-    for email_address in obj['to']:
-        if not is_valid_email(email_address):
-            respond_with_error(400, f'{email_address} is not a valid email address')
-            return False
     return True
 
+
+def replace_placeholders(text: str, senders_name: str, recipient_name: str, token: str):
+    replacements = {
+        'senders_name': 'someone' if senders_name.strip() == '' else senders_name.strip(),
+        'recipient_name': recipient_name.strip(),
+        'site_name': config.site_name,
+        'token': token,
+        'site_protocol': config.site_protocol,
+        'site_domain_name': config.site_domain_name,
+        'site_root_path': config.site_root_path,
+    }
+    for k, v in replacements.items():
+        text = text.replace('{{' + k +'}}', v)
+    text = re.sub(r' +', ' ', text).replace(' ,', ',')
+    return text
+
+
+def send_mail_old(obj):
+    global subject, email_html, email_text
+    for recipient in obj['to']:
+        msg = MIMEMultipart("alternative")
+        msg['From'] = config.smtp_from
+        msg['To'] = recipient['email']
+        msg['Subject'] = replace_placeholders(subject)
+        msg.attach(MIMEText(replace_placeholders(email_text, obj['from'], recipient['name']), obj['token'], 'plain'))
+        msg.attach(MIMEText(replace_placeholders(email_html, obj['from'], recipient['name']), obj['token'], 'html'))
+        server = smtplib.SMTP_SSL(config.smtp_host, config.smtp_port) if config.smtp_ssl else smtplib.SMTP(config.smtp_host, config.smtp_port)
+        if config.smtp_auth:
+            server.login(config.smtp_username, config.smtp_password)
+        server.send_message(msg)
+
 def send_mail(obj):
-    #msg = EmailMessage()
-    msg = MIMEMultipart("alternative")
-    msg['From'] = config.smtp_from
-    msg['To'] = ", ".join(obj['to'])
-    msg['Subject'] = obj['subject']
-    msg.attach(MIMEText(obj['text_message'], 'plain'))
-    msg.attach(MIMEText(obj['html_message'], 'html'))
-    server = smtplib.SMTP_SSL(config.smtp_host, config.smtp_port) if config.smtp_ssl else smtplib.SMTP(config.smtp_host, config.smtp_port)
-    if config.smtp_auth:
-        server.login(config.smtp_username, config.smtp_password)
-    server.send_message(msg)
+    global subject, email_html, email_text
+    emails = []
+    for recipient in obj['to']:
+        msg = EmailMessage()
+        msg['From'] = config.smtp_from
+        msg['To'] = recipient['email']
+        msg['Subject'] = replace_placeholders(subject)
+        
+        # Required headers for spam filters:
+        msg['Date'] = formatdate(localtime=True)
+        msg['Message-ID'] = make_msgid(domain="domain.any")
+
+        # Set UTF-8 default
+        msg.set_charset('utf-8')
+
+        # Add text + HTML alternative parts
+        msg.set_content(replace_placeholders(email_text, obj['from'], recipient['name']), obj['token'], subtype='plain', charset='utf-8')
+        msg.add_alternative(replace_placeholders(email_html, obj['from'], recipient['name']), obj['token'], subtype='html', charset='utf-8')
+        emails.append(msg)
+
+    # Connect and send
+    if config.smtp_ssl:
+        # SMTPS (port 465)
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, context=context) as server:
+            if config.smtp_auth:
+                server.login(config.smtp_username, config.smtp_password)
+            for msg in emails:
+                server.send_message(msg)
+    else:
+        # STARTTLS (e.g., port 587)
+        with smtplib.SMTP(config.smtp_host, config.smtp_port) as server:
+            server.starttls(context=ssl.create_default_context())
+            if config.smtp_auth:
+                server.login(config.smtp_username, config.smtp_password)
+            for msg in emails:
+                server.send_message(msg)
 
 
 
 ##########################
 # Main program
 ##########################
+
+subject = 'Message sent by {{senders_name}} ready for viewing on {{site_name}}'
+email_html= '''
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Secret Message Notification</title>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                line-height: 1.6em;
+                color: #333333; /* Dark gray text */
+            }
+            .button {
+                display: inline-block;
+                padding: 10px 20px;
+                margin: 15px 0;
+                background-color: #007bff; /* Professional blue */
+                color: #ffffff !important;
+                text-decoration: none;
+                border-radius: 4px;
+            }
+            p.footer {
+                font-size: 0.9em;
+                color: #777777;
+            }
+            a {
+                color: #007bff;
+            }
+            hr {
+                border: 0;
+                border-top: 1px solid #eeeeee;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <p>Hello {{recipient_name}},</p> 
+        <p>This is an automatic email to notify you that a secure private message has been sent to you by {{senders_name}} via **{{site_name}}** ({{site_domain_name}}).</p>
+        <p>If you don't know this sender or didn't expect to receive this message, feel free to ignore it.</p>
+        <p>To view your message, click the link below:</p>
+        <a href="{{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html#{{token}}" class="button">View Secret Message</a>
+        <p>Please note: This message will self-destruct after a certain time or number of views (defined by the sender).</p>
+        <hr>
+        <p class="footer">
+            Want to send secure messages? Visit <a href="{{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html">{{site_protocol}}://{{site_domain_name}}{{site_root_path}}</a>.
+        </p>
+        </body>
+</html>
+'''
+email_text = '''
+        Hello {{recipient_name}},
+
+        This is an automatic email to notify you that a secure private message has been sent to you by {{senders_name}} via **{{site_name}}** ({{site_domain_name}}).
+
+        If you don't know this sender or didn't expect to receive this message, feel free to ignore it.
+
+        To view your message, copy the link below in your browser's address bar:
+        {{site_protocol}}://{{site_domain_name}}{{site_root_path}}index.html#{{token}}
+        
+        Please note: This message will self-destruct after a certain time or number of views (defined by the sender).
+
+        Want to send secure messages? Visit {{site_protocol}}://{{site_domain_name}}{{site_root_path}}.
+'''
+
+
 
 try:
     print(f'Access-Control-Allow-Origin: {config.cors}')
