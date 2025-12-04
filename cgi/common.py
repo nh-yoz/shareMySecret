@@ -94,7 +94,7 @@ class Request:
     method=os.environ.get("REQUEST_METHOD", "").upper()
     arguments = cgi.parse()
     content = Content()
-    def body():
+    def body(self):
         return sys.stdin.read()
 
 request = Request()

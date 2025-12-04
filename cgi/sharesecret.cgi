@@ -56,7 +56,6 @@ def store_secret(data: dict):
     try:
         file_name = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
         key = common.get_key()
-        data['control'] = common.encrypt(file_name, key)
         data['message'] = common.encrypt(data['message'], key)
         if data['file'] is not None:
             data['file']['data'] = common.encrypt(data['file']['data'], key)
@@ -70,7 +69,12 @@ def store_secret(data: dict):
         # 'views' must be first key in file so it can be changed after each retrieval
         # 'expires' must be the second key in file for cleanup script
         # 'control' must be the third key in file for checking key
-        data = { 'views': 0, 'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1], **data }
+        data = {
+            'views': 0,
+            'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1],
+            'control': common.encrypt(file_name, key),
+            **data
+        }
         del data['expires_in_value']
         del data['expires_in_unit']
         f = open(fname, 'w')
