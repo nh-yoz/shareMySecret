@@ -70,7 +70,7 @@ def store_secret(data: dict):
         # 'expires' must be the second key in file for cleanup script
         # 'control' must be the third key in file for checking key
         data = {
-            'views': f'0:09d',
+            'views': f'{0:09d}',
             'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1],
             'control': common.encrypt(file_name, key),
             **data
