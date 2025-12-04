@@ -1,12 +1,11 @@
 #!/usr/bin/python3
-import re
 import os, sys, json, random, string, traceback, time, subprocess, yaml
 import config, common, validation
 from common import request as req
 
 def validate_encrypt_body(data: dict):
     test_dict = {
-        'message': [ 'and', (('type', 'str'), ('min', 1))],
+        'message': [ 'and', (('type', 'str'), 'base64')],
         'file': [ 'or', (('type', 'none'), ('type', 'dict')) ],
         'max_views': [ 'and', (('type', 'int'), ('min', 0))],
         'expires_in_unit': [ 'oneof', ('m', 'h', 'd') ],
@@ -23,24 +22,18 @@ def validate_encrypt_body(data: dict):
         if total_sec > 30 * 24 * 60 * 60:
             raise Exception('expires: should be less than 30 days')
 
-        # Check if message is base 64
-        if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', data['message']):
-            raise Exception('message: should be base64 encoded')
-
         # Further check if file is ok
         test_dict = {
             'name': [ 'and', (('type', 'str'), ('minmax', '[1,256]')) ],
             'size': [ 'and', (('type', 'int'), ('min', 1)) ],
-            'data': [ 'and', (('type', 'str'), ('min', 0)) ]
+            'data': [ 'and', (('type', 'str'), 'base64') ]
         }
         try:
-            validation.validate_dict(data['file'], test_dict)
+            if data['file'] is not None:
+                validation.validate_dict(data['file'], test_dict)
         except Exception as err:
             common.respond_with_error(400, err)
             return False
-        if data['file'] is not None:
-            if not re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', data['file']['data']):
-                raise Exception('file.data: should be base64 encoded')
         return True
     except Exception as err:
         common.respond_with_error(400, err)

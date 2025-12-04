@@ -75,6 +75,12 @@ def is_isodatetime(value) -> bool:
         return False
 
 
+def is_base64(value) -> bool:
+    if not is_str(value):
+        return False
+    return re.fullmatch(r'^[A-Za-z0-9+/]*={0,2}$', value) is not None
+
+
 def is_oneof(value: Union[str, int, float], values: list) -> bool:
     for v in values:
         if value == v:
@@ -223,7 +229,8 @@ special_functions = {
     "email": is_email,
     "url": is_url,
     "cron": is_cron,
-    "isodatetime": is_isodatetime
+    "isodatetime": is_isodatetime,
+    "base64": is_base64
 }
 
 def validate_value(key: str, value, constraint: Union[str, list, tuple]) -> str:

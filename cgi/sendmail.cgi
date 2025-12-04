@@ -161,7 +161,6 @@ try:
     common.print_headers(methods = ['POST', 'OPTIONS'])
     if req.method == 'OPTIONS':
         common.respond(200, '')
-        exit()
     elif req.method == 'POST':
         print('Content-type: application/json')
         if req.arguments:
