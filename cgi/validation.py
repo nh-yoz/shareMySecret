@@ -310,6 +310,10 @@ def validate_dict(dict_to_validate: dict, validation_dict: dict):
     # }
     # Format: { key -> rule[] } where rule is a tuple or list: (rule_name: str, rule: str).
     # The constraints will be evaluated in order
+    if not is_dict(validation_dict):
+        raise TypeError('validation_dict is not of type dict')
+    if not is_dict(dict_to_validate):
+        raise Exception('Invalid type: should be dict')
     for key in dict_to_validate:
         if not key in validation_dict:
             raise Exception(f'Invalid key: {key}')

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os, sys, json, random, string, traceback, time, subprocess, yaml
+import os, sys, json, yaml, random, string, traceback, time
 import config, common, validation
 from common import request as req
 
@@ -7,7 +7,7 @@ def validate_encrypt_body(data: dict):
     test_dict = {
         'message': [ 'and', (('type', 'str'), 'base64')],
         'file': [ 'or', (('type', 'none'), ('type', 'dict')) ],
-        'max_views': [ 'and', (('type', 'int'), ('min', 0))],
+        'max_views': [ 'and', (('type', 'int'), ('minmax', '[0,999999999]'))],
         'expires_in_unit': [ 'oneof', ('m', 'h', 'd') ],
         'expires_in_value': [ 'and', (('type', 'int'), ('min', 0))]
     }
@@ -99,6 +99,39 @@ def validate_arguments(given_args, valid_args):
     return True
 
 
+def increment_views(filename: str):
+    with open(filename, "r+b") as f:
+        # Read only the first line
+        first_line_bytes = f.readline()
+        first_line = first_line_bytes.decode("utf-8")
+        # Parse first line as YAML
+        data = yaml.safe_load(first_line)
+        try:
+            validation.validate_dict(data, { 'views': [ ('regex', '^[0-9]{9}$') ]})
+        except Exception as err:
+            raise err
+        # Parse & increment the view counter
+        old_value_str = data["views"]
+        new_value_int = int(old_value_str) + 1
+        data["views"] = f'{new_value_int:09d}' # always 9 digits
+        # Dump back using yaml, **keeping it on one line**
+        # default_flow_style=True → preserves inline `{key: value}`
+        updated_line = yaml.safe_dump(data, default_flow_style=False)
+        # PyYAML adds a newline; remove it to match original format
+        updated_line = updated_line.rstrip("\n")
+
+        # Ensure same length for in-place update
+        if len(updated_line) != len(first_line):
+            raise ValueError(
+                "Updated line has different length; cannot update in place safely.\n"
+                f"old: {len(first_line)}, new: {len(updated_line)}\n"
+                f"old_line: {first_line!r}\nnew_line: {updated_line!r}"
+            )
+        # Rewrite only the first line
+        f.seek(0)
+        f.write(updated_line.encode("utf-8"))
+
+
 def retrieve_secret(token: str):
     try:
         filename = token[0:10]
@@ -108,7 +141,6 @@ def retrieve_secret(token: str):
         f = open(fname, 'r')
         data = yaml.safe_load(f.read())
         f.close()
-        data['views'] += 1
         try:
             data['message'] = common.decrypt(data['message'], key)
             if data['file'] is not None:
@@ -116,14 +148,16 @@ def retrieve_secret(token: str):
         except Exception as err:
             common.respond_with_error(400, 'Invalid token')
             return
-        if data['views'] >= data['max_views'] and data['max_views'] != 0:
-            os.remove(fname)
-        else:
-            # Change the number of views without resaving the file: it is the first line in yaml-file
-            subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
+        data['views'] = int(data['views']) + 1
         del data['control']
         payload = json.JSONEncoder().encode(data)
         common.respond(200, payload)
+        if data['max_views'] != 0 and data['views'] >= data['max_views']:
+            os.remove(fname)
+        else:
+            # Change the number of views without resaving the file: it is the first line in yaml-file
+            increment_views(fname)
+            #subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
     except Exception as err:
         print(traceback.format_exc(), file=sys.stderr)
         common.respond_with_error(500, 'Unknown error')
