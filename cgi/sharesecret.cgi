@@ -111,7 +111,7 @@ def increment_views(filename: str):
         # Parse first line as YAML
         data = yaml.safe_load(first_line)
         try:
-            validation.validate_dict(data, { 'views': [ ('regex', '^[0-9]{9}$') ]})
+            validation.validate_dict(data, { 'views': [ ('regexp', '^[0-9]{9}$') ]})
         except Exception as err:
             raise err
         # Parse & increment the view counter

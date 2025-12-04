@@ -230,7 +230,6 @@ special_functions = {
     "url": is_url,
     "cron": is_cron,
     "isodatetime": is_isodatetime,
-    "regex": is_regex,
     "base64": is_base64
 }
 
