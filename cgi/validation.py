@@ -147,7 +147,7 @@ def is_cron(value: str) -> bool:
 def is_regex(value: str, regex: str) -> bool:
     if not is_str(value):
         return False
-    return re.search(regex, value) != None
+    return (re.match(regex, value) is not None)
 
 
 def is_email(value: str) -> bool:

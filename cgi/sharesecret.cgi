@@ -66,11 +66,11 @@ def store_secret(data: dict):
             'h': ('hours', 60 * 60),
             'd': ('days', 24 * 60 * 60)
         }
-        # 'views' must be first key in file so it can be changed after each retrieval
+        # 'views' must be first key in file as string in format 9 digits (000000001) so it can be changed after each retrieval
         # 'expires' must be the second key in file for cleanup script
         # 'control' must be the third key in file for checking key
         data = {
-            'views': 0,
+            'views': f'0:09d',
             'expires': time.time() + data['expires_in_value'] * time_multiplyers[data['expires_in_unit']][1],
             'control': common.encrypt(file_name, key),
             **data
