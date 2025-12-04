@@ -121,8 +121,6 @@ def increment_views(filename: str):
         # Dump back using yaml, **keeping it on one line**
         # default_flow_style=True → preserves inline `{key: value}`
         updated_line = yaml.safe_dump(data, default_flow_style=False)
-        # PyYAML adds a newline; remove it to match original format
-        updated_line = updated_line.rstrip("\n")
 
         # Ensure same length for in-place update
         if len(updated_line) != len(first_line):
@@ -160,7 +158,10 @@ def retrieve_secret(token: str):
             os.remove(fname)
         else:
             # Change the number of views without resaving the file: it is the first line in yaml-file
-            increment_views(fname)
+            try:
+                increment_views(fname)
+            except:
+                print(traceback.format_exc(), file=sys.stderr)
             #subprocess.run(["/bin/bash", "-c", f'/usr/bin/sed -i \'1s/[0-9]\+/{data["views"]}/\' {fname}'])
     except Exception as err:
         print(traceback.format_exc(), file=sys.stderr)
