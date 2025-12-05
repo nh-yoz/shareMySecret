@@ -24,7 +24,6 @@ const setErrors = (errors) => {
         'send-expires-error': '',
         'send-error': '',
         'get-error-error': '',
-        'send-result_email-address_error': '',
         'pwd-form-length-error': '',
         'pwd-form-number-error': '',
         'pwd-form-special-error': '',
@@ -353,8 +352,12 @@ const addEmailField = (event = null) => {
 const validateSendEmailFields = () => {
     let hasErrors = false;
     let from = '';
-    const [ linkEl, senderEl, tableEl, errEl ] = ['link', 'email-sender', 'email-recipients', 'email-recipients-err' ]
-        .map(suffix => document.getElementById(`send-result-${suffix}`));
+    const [ linkEl, senderEl, tableEl, errEl ] = [
+        'send-result-link',
+        'send-result-email-sender',
+        'send-result-email-recipients',
+        'send-result-email-recipients-err'
+    ].map(id => document.getElementById(id));
     [ linkEl, senderEl ].forEach(el => el.classList.remove('error'));
     linkEl.value = 'https://secret.niklashook.fr/#RQGx8jxrJSOmUE13aLF7n_x-QVKGX1Ly74JCOZs4OJcNKrNzMBr3Y'
     const token = linkEl.value.split('#').reduce((acc, cur, i) => i == 1 ? cur : acc, '' );
@@ -370,39 +373,41 @@ const validateSendEmailFields = () => {
         from = senderEl.value;
     }
     errEl.classList.add('no-show');
-    const emails = [];
+    let emails = [];
     tableEl.querySelectorAll('input[type="text"]').forEach(el => {
         el.classList.remove('error');
         el.value = el.value.trim();
-        if (el.value.length > 35) {
-            hasErrors = true;
-            el.classList.add('error');
-            emails.push({ 'name': '' });
-        } else {
-            emails.push({ 'name': el.value });
-        }
-    })
-    const email_regex = /^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+$/
+        emails.push({ nameEl: el, name: el.value });
+    });
     tableEl.querySelectorAll('input[type="email"]').forEach((el, i) => {
         el.classList.remove('error');
         el.value = el.value.trim();
-        if (email_regex.test(el.value) && el.value.length <= 320) {
-            emails[i]['email'] = el.value;
-        } else {
+        emails[i] = { ...emails[i], emailEl: el, email: el.value };
+    });
+    if (emails.some(obj => obj.email !== '' || obj.name !== '')) {
+        emails = emails.filter(obj => obj.email !== '' || obj.name !== '');
+    }
+    const email_regex = /^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+$/
+    emails.forEach(obj => {
+        if (!email_regex.test(obj.email) || obj.email.length > 320) {
             hasErrors = true;
-            el.classList.add('error');
-            emails[i]['email'] = '';
+            obj.emailEl.classList.add('error');
         }
-    })
+        if (obj.name.length > 35) {
+            hasErrors = true;
+            obj.element.classList.add('error');
+        }
+        delete obj.emailEl;
+        delete obj.nameEl;
+    });
     if (hasErrors) {
         errEl.classList.remove('no-show');
     }
-    return { hasErrors, obj: { token, from, to: emails.filter(item => item.email !== '') } };
+    return { hasErrors, obj: { token, from, to: emails } };
 }
 
 
 const sendEmail = () => {
-    const errEl = document.getElementById('send-result_email-address_error');
     const resultElement = document.getElementById('send-result_email-result');
     resultElement.innerHTML = '&nbsp;';
     const validationObj = validateSendEmailFields();
@@ -420,14 +425,13 @@ const sendEmail = () => {
         const body = validationObj.obj;
         fetch(url, {
                 method: "POST",
-		headers,
+		        headers,
                 signal: controller.signal,
                 body: JSON.stringify(body)
             })
             .then(res => {
                 if (res.ok) {
                     resultElement.innerHTML = 'The email has been sent';
-                    emailsElement.value = '';
                     resultElement.classList.add('info');
                     resultElement.classList.remove('error');
                 } else {
@@ -449,7 +453,6 @@ const sendEmail = () => {
                 clearTimeout(tOutId);
                 showSpinner(false);
             })
-
     }
 }
 
