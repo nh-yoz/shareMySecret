@@ -78,7 +78,7 @@ const fileChange = () => {
     }
     filenameEl.innerHTML = `${file.name} (${getHumanSize(file.size)})` 
     if (file.size > maxSize) {
-        fileErrEl.textContent = "File exceeds 10 MB limit!";
+        fileErrEl.textContent = `File exceeds ${getHumanSize(maxFileSize)} limit!`;
     } else {
         fileErrEl.innerHTML = "&nbsp;";
     }
