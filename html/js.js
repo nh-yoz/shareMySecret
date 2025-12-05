@@ -78,7 +78,7 @@ const fileChange = () => {
     }
     filenameEl.innerHTML = `${file.name} (${getHumanSize(file.size)})` 
     if (file.size > maxSize) {
-        fileErrEl.textContent = `File exceeds ${getHumanSize(maxFileSize)} limit!`;
+        fileErrEl.innerHTML = `File exceeds ${getHumanSize(maxFileSize)} limit!`;
     } else {
         fileErrEl.innerHTML = "&nbsp;";
     }
@@ -606,7 +606,7 @@ const decrypt = () => {
 }
 
 window.addEventListener('load', () => {
-    document.getElementById('max-file-size').textContent = getHumanSize(maxFileSize);
+    document.getElementById('max-file-size').innerHTML = getHumanSize(maxFileSize);
     throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
         speedFactor: 0.5
     });
