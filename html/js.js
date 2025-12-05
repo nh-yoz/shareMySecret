@@ -386,7 +386,7 @@ const validateSendEmailFields = () => {
     tableEl.querySelectorAll('input[type="email"]').forEach((el, i) => {
         el.classList.remove('error');
         el.value = el.value.trim();
-        if (email_regex.test(el.value) && el.value <= 320) {
+        if (email_regex.test(el.value) && el.value.length <= 320) {
             emails[i]['email'] = el.value;
         } else {
             hasErrors = true;
