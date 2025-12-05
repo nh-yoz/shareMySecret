@@ -359,7 +359,6 @@ const validateSendEmailFields = () => {
         'send-result-email-recipients-err'
     ].map(id => document.getElementById(id));
     [ linkEl, senderEl ].forEach(el => el.classList.remove('error'));
-    linkEl.value = 'https://secret.niklashook.fr/#RQGx8jxrJSOmUE13aLF7n_x-QVKGX1Ly74JCOZs4OJcNKrNzMBr3Y'
     const token = linkEl.value.split('#').reduce((acc, cur, i) => i == 1 ? cur : acc, '' );
     if (token.length !== 53 ) {
         hasErrors = true;
