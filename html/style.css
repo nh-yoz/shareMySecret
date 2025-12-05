@@ -54,6 +54,10 @@ h2 {
     width: 100%;
 }
 
+.half-width {
+    width: 50%;
+}
+
 .flex-row.justify {
     justify-content: space-between;
 }
@@ -172,12 +176,72 @@ input[type="file"] {
   display: none;
 }
 
+.bold {
+    font-weight: 700;
+}
+
 .custom-file-upload {
   border: 1px solid #ccc;
   display: inline-block;
   padding: 6px 12px;
   cursor: pointer;
 }
+
+table#send-result-email-recipients {
+    width: 100%;
+/*    border-spacing: 0px; */
+    border-collapse: collapse;
+    margin-top: 1rem
+}
+
+table#send-result-email-recipients td {
+    border: 1px solid black;
+}
+
+table#send-result-email-recipients th {
+    font-weight: 400;
+    text-align: left;
+    border: 1px solid black;
+}
+
+table#send-result-email-recipients td:not(:first-child) {
+    text-align: left;
+    padding: 5px 2px;
+}
+
+input.error {
+    border-color: red !important;
+    color: black
+}
+
+table#send-result-email-recipients input {
+    width: 100%;
+    margin: 0;
+}
+table#send-result-email-recipients,
+table#send-result-email-recipients th,
+table#send-result-email-recipients td
+table#send-result-email-recipients tr {
+    border: none;
+}
+table#send-result-email-recipients svg {
+    fill: yellowgreen;
+   /* stroke: yellowgreen; */
+    width: 1.25em;
+}
+
+table#send-result-email-recipients tbody tr:not(:last-child) svg.add {
+    display: none;
+}
+
+table#send-result-email-recipients tbody tr:last-child svg.remove {
+    display: none;
+}
+
+table#send-result-email-recipients tbody tr:nth-child(10) svg {
+    display: none;
+}
+
 
 #send-expires-value, #send-expires-unit {
     width: 47%;

@@ -9,7 +9,7 @@ from common import request as req
 
 def validate_body(obj):
     test_dict = {
-        'from': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
+        'from': [ 'and', (('type', 'str' ), ('minmax', '[0,35]')) ],
         'to': [ 'and', (('type', 'list' ), ('minmax', '[1,10]')) ],
         'token': [ ('type', 'str' ), ('minmax', '[53,53]') ]
     }
@@ -20,8 +20,8 @@ def validate_body(obj):
         return False
     try:
         test_dict = {
-            'name': [ 'and', (('type', 'str' ), ('minmax', '[0,20]')) ],
-            'email': [ 'email' ],
+            'name': [ 'and', (('type', 'str' ), ('minmax', '[0,35]')) ],
+            'email': [ 'and', ('email', ('max', 320)) ],
         }
         for item in obj['to']:
             validation.validate_dict(item, test_dict)

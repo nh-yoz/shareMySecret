@@ -314,65 +314,110 @@ const showSpinner = (visible) => {
     }
 }
 
+
+const removeEmailField = (event) => {
+    event.currentTarget.parentElement.parentElement.remove();
+}
+
+const addEmailField = (event = null) => {
+    const tbodyEl = document.querySelector('table#send-result-email-recipients tbody')
+    if (tbodyEl.children.length > 9) {
+        return
+    }
+    const newEl = document.createElement('tr');
+    newEl.innerHTML = `
+        <td>
+            <svg class="add" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8"></path></svg>
+            <svg class="remove" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 11v2h10v-2zm5-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8"></path></svg>
+        </td>
+        <td class="">
+            <input type="text" class="" spellcheck="false" maxlength="35" value="">
+        </td>
+        <td>
+            <input type="email" class="" spellcheck="false" maxlength="320" value="">
+        </td>`;
+    newEl.querySelector('svg.add').addEventListener('click', addEmailField)
+    newEl.querySelector('svg.remove').addEventListener('click', removeEmailField)
+    if (event === null) {
+        if (tbodyEl.lastChild == null) {
+            tbodyEl.appendChild(newEl);
+        } else {
+            tbodyEl.lastChild.after(newEl);
+        }
+    } else {
+        event.currentTarget.parentElement.parentElement.after(newEl);
+    }
+}
+
+
+const validateSendEmailFields = () => {
+    let hasErrors = false;
+    let from = '';
+    const [ linkEl, senderEl, tableEl, errEl ] = ['link', 'email-sender', 'email-recipients', 'email-recipients-err' ]
+        .map(suffix => document.getElementById(`send-result-${suffix}`));
+    [ linkEl, senderEl ].forEach(el => el.classList.remove('error'));
+    linkEl.value = 'https://secret.niklashook.fr/#RQGx8jxrJSOmUE13aLF7n_x-QVKGX1Ly74JCOZs4OJcNKrNzMBr3Y'
+    const token = linkEl.value.split('#').reduce((acc, cur, i) => i == 1 ? cur : acc, '' );
+    if (token.length !== 53 ) {
+        hasErrors = true;
+        linkEl.classList.add('error')
+    }
+    senderEl.value = senderEl.value.trim();
+    if (senderEl.value.length > 35) {
+        hasErrors = true;
+        senderEl.classList.add('error');
+    } else {
+        from = senderEl.value;
+    }
+    errEl.classList.add('no-show');
+    const emails = [];
+    tableEl.querySelectorAll('input[type="text"]').forEach(el => {
+        el.classList.remove('error');
+        el.value = el.value.trim();
+        if (el.value.length > 35) {
+            hasErrors = true;
+            el.classList.add('error');
+            emails.push({ 'name': '' });
+        } else {
+            emails.push({ 'name': el.value });
+        }
+    })
+    const email_regex = /^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+$/
+    tableEl.querySelectorAll('input[type="email"]').forEach((el, i) => {
+        el.classList.remove('error');
+        el.value = el.value.trim();
+        if (email_regex.test(el.value) && el.value <= 320) {
+            emails[i]['email'] = el.value;
+        } else {
+            hasErrors = true;
+            el.classList.add('error');
+            emails[i]['email'] = '';
+        }
+    })
+    if (hasErrors) {
+        errEl.classList.remove('no-show');
+    }
+    return { hasErrors, obj: { token, from, to: emails.filter(item => item.email !== '') } };
+}
+
+
 const sendEmail = () => {
     const errEl = document.getElementById('send-result_email-address_error');
     const resultElement = document.getElementById('send-result_email-result');
     resultElement.innerHTML = '&nbsp;';
-    const emailsElement = document.getElementById('send-result-email-addresses');
-    const emails = emailsElement.value.split(/;|:|,| /g).filter(val => val !== '');
-    const subject = document.getElementById('send-result-email-subject').value;
-//    const sender = document.getElementById('send-result-email-sender').value;
-    const errors = {};
-    const emailsOk = emails.every(email => {
-        if (/^([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Za-z]{2,})+$/.test(email)) {
-            console.log(`email ${email} ok`);
-            return true;
-        } else {
-            console.log(`email ${email} not ok`);
-            errors['send-result_email-address_error'] = `"${email}" is not a valid email address`;
-            return false;
-        }
-    })
+    const validationObj = validateSendEmailFields();
 
-    setErrors(errors);
-    if (emailsOk) {
+    if (!validationObj.hasErrors) {
         showSpinner(true);
         const controller = new AbortController();
-        const tOutId = setTimeout(() => controller.abort(), 8000);
+        const tOutId = setTimeout(() => controller.abort(), 10000);
         const url = `/cgi/sendmail.cgi`;
         const headers = {
 	    "Content-Type": "application/json",
 	    "Origin": window.location.hostname,
 	    "X-Requested-With": window.location.hostname
         };
-        const body = {
-            to: emails,
-            subject,
-            text_message: `Hello,\n\n
-                A secret message has been sent to you via ${window.location.hostname}. To view the message, use the link below.\n\n
-                ${document.getElementById('send-result-link').value}\n\n\n
-                Want to send secret messages? Visit ${window.location.href}`,
-            html_message: btoa(`<html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {
-                            /* background-color: black;
-                            color: greenyellow; */
-                            font-family: Arial, Helvetica, sans-serif;
-                            line-height: 1.4em;
-                        }
-                        /* p, a { font-size: 1rem; color: inherit; } */
-                    </style>
-                </head>
-                <body>
-                    <p>Hello,</p>
-                    <p>A secret message has been sent to you via ${window.location.hostname}.</p>
-                    <p>To view the message, click <a href="${document.getElementById('send-result-link').value}">here</a>.</p>
-                    <p>---<br>Want to send secret messages ? Visit <a href="${window.location.href}">${window.location.href}</a>.</p>
-                </body>
-            </html>`)
-        };
+        const body = validationObj.obj;
         fetch(url, {
                 method: "POST",
 		headers,
@@ -589,11 +634,11 @@ window.addEventListener('load', () => {
         'pwd-form-option-ambiguous',
         'pwd-send'
     ].forEach(id => document.getElementById(id).addEventListener('click', generatePassword));
-    document.getElementById('send-result-email-addresses').value = '';
     if (window.location.hash.substring(1) !== '') {
         decrypt()
     } else {
         setView('send');
     };
     generatePassword();
+    addEmailField();
 })

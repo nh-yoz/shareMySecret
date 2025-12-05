@@ -82,25 +82,31 @@
                     <div>
                         <label>
                             Url to retrieve message
-                            <input type="text" readonly class="full-width" id="send-result-link">
+                            <input type="text" id="send-result-link" class="full-width" readonly>
                         </label>
                     </div>
                     <button class="small-padding-horizontal no-margin-vertical align-right" id="send-result-copy">
                         Copy to clipboard
                     </button>
                     <div>
-                        <label>
-                            Want to send this link? Enter email-addresses*
-                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-addresses" value="">
-                        </label>
-<!--                        <label>
-                            Your name
-                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-sender" value="">
-                        </label>
--->                        <label>
-                            Subject*
-                            <input type="text" class="full-width" spellcheck="false" id="send-result-email-subject" value="You've got a secret message">
-                        </label>
+                        <p class="bold">Want to send this link by email ?
+                        <div>
+                            <label for="send-result-email-sender">
+                                Your name
+                            </label>
+                            <input type="text" id="send-result-email-sender" class="half-width" spellcheck="false" maxlength="35" value="">
+                            <p class="info">Not required but prevents emails from being classified as spam</p>
+                        </div>
+                        <table id="send-result-email-recipients">
+                            <thead>
+                                <tr><th></th><th>Name</th><th>Email address*</th></tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                        <p class="info">Entering names for the recipients prevent emails from being classified as spam</p>
+                        <p id="send-result-email-recipients-err" class="error no-show">Something is wrong in highlighted cell(s)</p>
+
                     </div>
                     <div class="flex flex-row justify">
                         <div>
