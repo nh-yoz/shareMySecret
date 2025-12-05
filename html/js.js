@@ -71,7 +71,7 @@ const getHumanSize = (sizeBytes) => {
 const fileChange = () => {
     const file = document.getElementById('send-file').files[0];
     const [ filenameEl, fileErrEl ] = ['send-file-filename', 'send-file-error'].map(id => document.getElementById(id));
-    const maxSize = maxFileSize; // 10 MB in bytes
+    const maxSize = maxFileSize; 
     if (!file) {
         filenameEl.textContent = "No file selected";
         return;
@@ -606,6 +606,7 @@ const decrypt = () => {
 }
 
 window.addEventListener('load', () => {
+    document.getElementById('max-file-size').textContent = getHumanSize(maxFileSize);
     throbber = new CryptThrobber(document.getElementById('throbber'), 20, 'white', {
         speedFactor: 0.5
     });
